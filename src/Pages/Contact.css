@@ -1,0 +1,305 @@
+/* ==================================================================
+   Contact.css – Ultimate Professional Contact Page (2025 Edition)
+   Designed to impress recruiters, founders, and hiring managers
+   ================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+  --primary: #0a7e8c;
+  --primary-light: #10b3c8;
+  --accent: #00d4ff;
+  --gradient: linear-gradient(135deg, #0a7e8c 0%, #00d4ff 100%);
+  --gradient-hover: linear-gradient(135deg, #065a64 0%, #00b8e6 100%);
+  --success: #10b981;
+  --bg: #f8fafa;
+  --card-bg: white;
+  --text: #1e293b;
+  --text-light: #64748b;
+  --border: #e2e8f0;
+  --shadow: 0 25px 60px rgba(10, 126, 140, 0.14);
+  --shadow-hover: 0 40px 90px rgba(10, 126, 140, 0.24);
+  --radius: 32px;
+  --transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+
+.contact-main {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f7fa 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background decorative orbs */
+.contact-main::before,
+.contact-main::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,212,255,0.15), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+.contact-main::before {
+  width: 600px;
+  height: 600px;
+  top: -200px;
+  right: -200px;
+}
+.contact-main::after {
+  width: 800px;
+  height: 800px;
+  bottom: -300px;
+  left: -300px;
+  background: radial-gradient(circle, rgba(10,126,140,0.1), transparent 70%);
+}
+
+/* ==================================================================
+   MAIN CONTACT CARD – The Star of the Show
+   ================================================================== */
+.contact-card {
+  max-width: 720px;
+  width: 100%;
+  background: var(--card-bg);
+  padding: 4.5rem 3.5rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(16px);
+  transition: var(--transition);
+}
+.contact-card:hover {
+  transform: translateY(-12px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Title with emoji */
+.contact-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(3rem, 7vw, 4.5rem);
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.contact-emoji {
+  display: block;
+  font-size: 0.7em;
+  margin-bottom: 0.5rem;
+}
+
+/* Intro paragraph */
+.contact-intro {
+  font-size: 1.35rem;
+  text-align: center;
+  color: var(--text-light);
+  margin-bottom: 2.5rem;
+  line-height: 1.8;
+}
+.contact-highlight {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+}
+
+/* Divider */
+.contact-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary-light), transparent);
+  margin: 3.5rem 0;
+  border-radius: 2px;
+}
+
+/* Subtitle */
+.contact-subtitle {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2.2rem;
+  margin: 2.5rem 0 1.8rem;
+  color: var(--primary);
+  text-align: center;
+  position: relative;
+}
+.contact-subtitle::after {
+  content: '';
+  width: 80px;
+  height: 4px;
+  background: var(--gradient);
+  display: block;
+  margin: 1rem auto 0;
+  border-radius: 2px;
+}
+
+/* Direct Contact Methods */
+.contact-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+  margin: 2.5rem 0;
+}
+
+.contact-method {
+  display: flex;
+  align-items: center;
+  gap: 1.8rem;
+  padding: 1.6rem 2rem;
+  background: #f8fdfc;
+  border-radius: 20px;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 1.3rem;
+  font-weight: 600;
+  transition: var(--transition);
+  border: 2px solid transparent;
+}
+.contact-method:hover {
+  background: #e0f7fa;
+  border-color: var(--primary-light);
+  transform: translateX(10px);
+  box-shadow: 0 15px 35px rgba(10, 126, 140, 0.12);
+}
+.contact-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+.contact-details {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* Professional Profiles */
+.contact-note {
+  text-align: center;
+  font-size: 1.15rem;
+  color: var(--text-light);
+  margin-bottom: 2.5rem;
+}
+
+.contact-socials {
+  display: flex;
+  justify-content: center;
+  gap: 2.5rem;
+  flex-wrap: wrap;
+  margin: 3rem 0;
+}
+
+.contact-social-btn {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem 2.5rem;
+  background: white;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  min-width: 200px;
+  justify-content: center;
+}
+.contact-social-btn img {
+  width: 32px;
+  height: 32px;
+}
+.contact-social-btn:hover {
+  transform: translateY(-10px) scale(1.05);
+  box-shadow: var(--shadow-hover);
+}
+.contact-social-btn.github:hover { border-color: #333; background: #24292e; color: white; }
+.contact-social-btn.linkedin:hover { border-color: #0077b5; background: #0077b5; color: white; }
+.contact-social-btn.linkedin:hover img { filter: brightness(0) invert(1); }
+
+/* Why Connect Section */
+.contact-extra {
+  margin-top: 3rem;
+  text-align: center;
+}
+
+.contact-features {
+  list-style: none;
+  font-size: 1.25rem;
+  max-width: 680px;
+  margin: 2.5rem auto;
+  text-align: left;
+  display: grid;
+  gap: 1.2rem;
+}
+.contact-features li {
+  padding: 1rem 1.5rem;
+  background: #f0fdf4;
+  border-radius: 16px;
+  border-left: 5px solid var(--success);
+  transition: var(--transition);
+}
+.contact-features li:hover {
+  background: #dcfce7;
+  transform: translateX(8px);
+}
+
+/* Final Quote */
+.contact-quote {
+  font-size: 1.6rem;
+  font-style: italic;
+  color: var(--primary);
+  background: #f0f9ff;
+  padding: 2.5rem;
+  border-radius: 24px;
+  margin: 3.5rem auto 0;
+  max-width: 720px;
+  border-left: 6px solid var(--accent);
+  line-height: 1.8;
+  position: relative;
+}
+.contact-quote::before,
+.contact-quote::after {
+  content: '"';
+  font-size: 5rem;
+  color: var(--accent);
+  opacity: 0.2;
+  position: absolute;
+}
+.contact-quote::before { top: -10px; left: 20px; }
+.contact-quote::after { bottom: -40px; right: 20px; }
+
+/* ==================================================================
+   RESPONSIVE
+   ================================================================== */
+@media (max-width: 768px) {
+  .contact-card {
+    padding: 3rem 2rem;
+    margin: 1rem;
+  }
+  .contact-socials {
+    flex-direction: column;
+    align-items: center;
+  }
+  .contact-social-btn {
+    width: 100%;
+    max-width: 300px;
+  }
+  .contact-method {
+    font-size: 1.1rem;
+    padding: 1.4rem 1.8rem;
+  }
+  .contact-features {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-title { font-size: 3rem; }
+  .contact-subtitle { font-size: 1.9rem; }
+}
