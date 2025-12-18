@@ -4,214 +4,190 @@ import "./About.css";
 function About() {
   return (
     <main className="abt-main">
-      {/* ========================= HERO SECTION ========================= */}
+
+      {/* ========================= HERO ========================= */}
       <section className="abt-hero">
         <div className="abt-hero-inner">
+
           <div className="abt-avatar-card">
             <img
               src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
-              alt="Profile"
+              alt="Developer profile"
               className="abt-avatar"
             />
           </div>
 
           <div className="abt-intro">
-            <h1 className="abt-name">Career Path AI & ChatBot Platform</h1>
+            <h1 className="abt-name">Career Path AI Platform</h1>
 
             <p className="abt-title">
               <span className="gradient-text">
-                AI-Powered Career Guidance • Resume Intelligence • Skill Development
+                AI-Driven Career Guidance • Resume Analysis • Skill Mapping
               </span>
             </p>
 
             <div className="abt-location">
-              <span><strong>Developed by:</strong> G S S S Bhagavan</span>
-              <br />
-              <span><strong>Program:</strong> B.Tech – AI & Data Science</span>
-              <br />
-              <span><strong>Institution:</strong> Ramachandra College of Engineering, Eluru</span>
+              <span><strong>Developed by:</strong> G S S S Bhagavan</span><br />
+              <span><strong>Degree:</strong> B.Tech – Artificial Intelligence & Data Science</span><br />
+              <span><strong>College:</strong> Ramachandra College of Engineering, Eluru</span>
             </div>
 
             <blockquote className="abt-quote">
-              <span>
-                “Empowering individuals with intelligent, data-driven career insights —
-                guiding them toward clarity, confidence, and measurable professional growth.”
-              </span>
+              “Built with a focus on practical career problems — reducing ambiguity,
+              improving resume quality, and helping users make informed career decisions.”
             </blockquote>
           </div>
         </div>
       </section>
 
-      {/* ========================= QUICK HIGHLIGHTS (HR FOCUSED) ========================= */}
-      <section className="abt-card abt-highlights">
-        <div className="highlight-grid">
-          <div className="highlight">
-            <div className="highlight-value">>90%</div>
-            <div className="highlight-label">Resume Match Accuracy (prototype)</div>
-          </div>
-          <div className="highlight">
-            <div className="highlight-value">3×</div>
-            <div className="highlight-label">Faster candidate screening</div>
-          </div>
-          <div className="highlight">
-            <div className="highlight-value">AI + Human</div>
-            <div className="highlight-label">Hybrid review workflow support</div>
-          </div>
-          <div className="highlight">
-            <div className="highlight-value">24/7</div>
-            <div className="highlight-label">On-demand career assistance</div>
-          </div>
-        </div>
-        <p className="abt-description" style={{ marginTop: 18 }}>
-          Designed for hiring teams and career services — this platform reduces manual screening
-          time, elevates candidate-job fit scoring, and gives candidates a clearer, data-backed
-          pathway to success.
+      {/* ========================= CONTEXT ========================= */}
+      <section className="abt-card">
+        <h2 className="abt-section-title">Why This Platform Exists</h2>
+        <p className="abt-description">
+          Many students and early-career professionals struggle with unclear career paths,
+          poorly optimized resumes, and lack of structured guidance. This platform was built
+          to address those gaps using a combination of AI-based analysis and guided workflows.
+        </p>
+
+        <p className="abt-description">
+          The goal is not to replace human decision-making, but to support it — by providing
+          faster insights, structured recommendations, and consistent feedback.
         </p>
       </section>
 
-      {/* ========================= PROJECT OVERVIEW ========================= */}
-      <section className="abt-card abt-project-card fade-in">
-        <h2 className="abt-section-title">About the Project</h2>
-        <p className="abt-description">
-          The <strong>Career Path AI & ChatBot Platform</strong> is an enterprise-friendly,
-          modular solution that helps institutions and recruiters surface top-fit candidates
-          faster. It combines resume intelligence, smart role prediction, and conversational AI
-          to make hiring and career advice both scalable and human-centered.
-        </p>
+      {/* ========================= WHAT IT DOES ========================= */}
+      <section className="abt-card">
+        <h2 className="abt-section-title">What the System Does</h2>
 
         <ul className="abt-values">
           <li>
             <span className="abt-value-icon">📄</span>
-            <strong>Resume Intelligence:</strong> Keyword extraction, role mapping, and ATS-style scoring.
+            <strong>Resume Analysis:</strong> Parses resumes, extracts skills, and evaluates alignment
+            with common job role requirements.
           </li>
+
           <li>
             <span className="abt-value-icon">🤖</span>
-            <strong>CareerBot Assistant:</strong> Contextual Q&A, mock interviews, and personalized action plans.
+            <strong>CareerBot:</strong> Provides contextual guidance, interview preparation tips,
+            and general career-related Q&A.
           </li>
+
           <li>
             <span className="abt-value-icon">📊</span>
-            <strong>Skill-Gap Analysis:</strong> Role-specific gap detection and certification suggestions.
+            <strong>Skill Gap Identification:</strong> Highlights missing or weak skills
+            relative to a selected role.
           </li>
+
           <li>
-            <span className="abt-value-icon">🔐</span>
-            <strong>Enterprise-ready Security:</strong> Tokenized uploads, role-based access, and secure storage.
-          </li>
-          <li>
-            <span className="abt-value-icon">🚀</span>
-            <strong>Outcome-driven Roadmaps:</strong> Measurable learning paths tied to career milestones.
+            <span className="abt-value-icon">🧭</span>
+            <strong>Career Roadmaps:</strong> Suggests structured next steps such as skills to learn,
+            certifications, or preparation focus areas.
           </li>
         </ul>
       </section>
 
-      {/* ========================= USE CASES FOR HR & EDU ========================= */}
-      <section className="abt-card abt-usecases fade-in">
-        <h2 className="abt-section-title">Use Cases (HR / Career Services)</h2>
+      {/* ========================= REALISTIC USE CASES ========================= */}
+      <section className="abt-card">
+        <h2 className="abt-section-title">Intended Use Cases</h2>
+
         <div className="usecase-grid">
           <div className="usecase">
-            <h3>Candidate Pre-Screening</h3>
-            <p>Automate initial CV triage with explainable scores and top-skill highlights for each candidate.</p>
+            <h3>Students & Fresh Graduates</h3>
+            <p>
+              To understand role expectations, improve resumes, and plan skill development
+              before applying for jobs.
+            </p>
           </div>
+
           <div className="usecase">
-            <h3>Role Fit Recommendation</h3>
-            <p>Match candidate profiles to open roles and rank them by suitability and skill gaps.</p>
+            <h3>Placement Cells</h3>
+            <p>
+              As a supporting tool for resume reviews, mock interviews,
+              and structured career guidance.
+            </p>
           </div>
+
           <div className="usecase">
-            <h3>Student Career Coaching</h3>
-            <p>Provide personalized learning roadmaps, interview simulations, and certification guides.</p>
+            <h3>Early-Career Professionals</h3>
+            <p>
+              To reassess career direction, identify gaps, and plan transitions
+              into new technical roles.
+            </p>
           </div>
+
           <div className="usecase">
-            <h3>Diversity & Talent Mobility</h3>
-            <p>Identify transferable skills and internal mobility candidates to improve retention.</p>
+            <h3>Prototype for HR Tools</h3>
+            <p>
+              Can serve as a base for internal screening or career-support systems
+              with further customization.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* ========================= TECH STACK & METRICS ========================= */}
-      <section className="abt-card abt-tech fade-in">
-        <h2 className="abt-section-title">Technical Stack & Performance</h2>
+      {/* ========================= TECH STACK ========================= */}
+      <section className="abt-card">
+        <h2 className="abt-section-title">Technical Overview</h2>
+
         <div className="tech-grid">
           <div className="tech">
             <strong>Frontend</strong>
-            <div>React, Framer Motion, Tailwind-ready CSS</div>
+            <div>React, CSS (Enterprise-style UI), Framer Motion</div>
           </div>
+
           <div className="tech">
             <strong>Backend</strong>
-            <div>Flask, REST APIs, ThreadPool for concurrency</div>
+            <div>Flask / REST APIs</div>
           </div>
+
           <div className="tech">
-            <strong>ML</strong>
-            <div>Transformer models (serving via API), TF/PyTorch for experiments</div>
+            <strong>AI / ML</strong>
+            <div>NLP-based parsing, role matching logic</div>
           </div>
+
           <div className="tech">
-            <strong>Storage</strong>
-            <div>MongoDB / Cloud Storage, secure temp handling for uploads</div>
+            <strong>Data</strong>
+            <div>Structured skill datasets, resume text processing</div>
           </div>
         </div>
 
-        <div className="performance">
-          <p><strong>Prototype results:</strong> Average processing latency &lt; 1.5s (text only), CV parsing accuracy > 90% on validation set.</p>
-        </div>
-      </section>
-
-      {/* ========================= TESTIMONIALS (FAKE EXAMPLES FOR HR) ========================= */}
-      <section className="abt-card abt-testimonials fade-in">
-        <h2 className="abt-section-title">Early Feedback</h2>
-        <div className="testimonial-grid">
-          <blockquote className="testimonial">
-            "<strong>Reduced screening time by 60%</strong> in our pilot — quick, accurate, and easy to integrate."
-            <footer>— Talent Lead, Tech Startup (pilot)</footer>
-          </blockquote>
-          <blockquote className="testimonial">
-            "The CareerBot gave practical, actionable advice to students that improved interview readiness."
-            <footer>— Placement Officer, University</footer>
-          </blockquote>
-        </div>
+        <p className="abt-description" style={{ marginTop: 16 }}>
+          The system is designed in a modular way so individual components
+          (resume parsing, chatbot, recommendations) can be extended independently.
+        </p>
       </section>
 
       {/* ========================= ROADMAP ========================= */}
-      <section className="abt-card abt-roadmap fade-in">
-        <h2 className="abt-section-title">Roadmap & Next Steps</h2>
+      <section className="abt-card">
+        <h2 className="abt-section-title">Planned Improvements</h2>
         <ol className="roadmap-list">
-          <li><strong>Q1:</strong> Improve multi-lingual resume parsing & bias mitigation.</li>
-          <li><strong>Q2:</strong> Integrate calendar + interview booking + ATS connectors.</li>
-          <li><strong>Q3:</strong> ML-backed candidate ranking for enterprise integration.</li>
-          <li><strong>Ongoing:</strong> Security hardening, GDPR/PDPA compliance, and customer pilot programs.</li>
+          <li>Improve resume parsing accuracy and formatting support</li>
+          <li>Add role-specific interview simulations</li>
+          <li>Introduce basic analytics for career progress tracking</li>
+          <li>Enhance security and data handling for production readiness</li>
         </ol>
       </section>
 
-      {/* ========================= CALL TO ACTION (HR) ========================= */}
-      <section className="abt-card abt-cta fade-in">
-        <h2 className="abt-section-title">Interested in a Pilot or Demo?</h2>
+      {/* ========================= DEVELOPER ========================= */}
+      <section className="abt-card abt-personal-card">
+        <h2 className="abt-section-title">About the Developer</h2>
+
         <p className="abt-description">
-          If you are a recruiter, placement officer, or product manager and want to evaluate a tailored
-          pilot for your organization — let’s connect. We offer prototype integrations, CSV/ATS import,
-          and a sandbox environment for pilot evaluation.
+          <strong>G S S S Bhagavan</strong> is a B.Tech student specializing in Artificial Intelligence
+          & Data Science. This project reflects a focus on applying AI concepts to
+          real-world career and hiring challenges.
         </p>
 
-        <div className="cta-row">
-          <a className="cta-btn primary" href="mailto:gsiva@example.com?subject=Career%20Path%20Platform%20Demo">
-            Request a Demo
-          </a>
-          <a className="cta-btn ghost" href="/contact">
-            Contact Developer
-          </a>
-        </div>
-      </section>
-
-      {/* ========================= FOOTER PROFILE ========================= */}
-      <section className="abt-card abt-personal-card fade-in">
-        <h2 className="abt-section-title">Project Lead</h2>
-        <p className="abt-description">
-          <strong>G S S S Bhagavan</strong> — B.Tech (AI & Data Science). Passionate about building AI tools that
-          help people make smarter career decisions. Available for collaborations, pilots, and placements support.
-        </p>
         <div className="abt-profile highlight-box">
-          <div><strong>Specialization:</strong> Artificial Intelligence & Data Science</div>
-          <div><strong>Institution:</strong> Ramachandra College of Engineering</div>
-          <div><strong>Location:</strong> Eluru, Andhra Pradesh, India</div>
-          <div style={{ marginTop: 10 }}><strong>Email:</strong> gsiva@example.com</div>
+          <div><strong>Focus Areas:</strong> AI, Data Science, Web Applications</div>
+          <div><strong>College:</strong> Ramachandra College of Engineering</div>
+          <div><strong>Location:</strong> Eluru, Andhra Pradesh</div>
+          <div style={{ marginTop: 10 }}>
+            <strong>Email:</strong> gsiva@example.com
+          </div>
         </div>
       </section>
+
     </main>
   );
 }

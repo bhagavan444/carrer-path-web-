@@ -1,70 +1,89 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { auth } from '../firebase';
-import './Navbar.css';
+import React, { useState, useEffect } from "react";
+import { Link, NavLink } from "react-router-dom";
+import { auth } from "../firebase";
+import "./Navbar.css";
 
 function Navbar({ handleLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      setIsLoggedIn(!!user);
+      setIsAuthenticated(!!user);
     });
     return () => unsubscribe();
   }, []);
 
+  const closeMenu = () => setMenuOpen(false);
+
   return (
-    <nav className="navbar">
+    <nav className="navbar" role="navigation" aria-label="Primary Navigation">
+      {/* ================= LOGO ================= */}
       <div className="navbar-logo">
-        <Link to="/">Carrer Path Recommendation</Link>
+        <Link to="/" onClick={closeMenu}>
+          Career Path AI
+        </Link>
       </div>
 
-      <div className={`navbar-links ${menuOpen ? 'active' : ''}`}>
-        {/* Always visible links */}
-        <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
-        <Link to="/about" onClick={() => setMenuOpen(false)}>About Bot</Link>
-        <Link to="/chat" onClick={() => setMenuOpen(false)}>Carreer bot</Link>
-        <Link to="/contact" onClick={() => setMenuOpen(false)}>Contact</Link>
+      {/* ================= LINKS ================= */}
+      <div className={`navbar-links ${menuOpen ? "active" : ""}`}>
+        <NavLink to="/" onClick={closeMenu}>
+          Home
+        </NavLink>
 
-        {/* Only show Chat link if logged in */}
-        {isLoggedIn && (
-          
-          <Link to="/predict" onClick={() => setMenuOpen(false)}>Analyzer</Link>
+        <NavLink to="/about" onClick={closeMenu}>
+          About
+        </NavLink>
+
+        <NavLink to="/chat" onClick={closeMenu}>
+          Career Bot
+        </NavLink>
+
+        <NavLink to="/contact" onClick={closeMenu}>
+          Contact
+        </NavLink>
+
+        {/* Auth-only links */}
+        {isAuthenticated && (
+          <NavLink to="/predict" onClick={closeMenu}>
+            Resume Analyzer
+          </NavLink>
         )}
 
-        {/* Login / Logout button */}
-        {!isLoggedIn ? (
-          <Link
+        {/* Auth Action */}
+        {!isAuthenticated ? (
+          <NavLink
             to="/login"
             className="navbar-btn"
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
           >
-            Login
-          </Link>
+            Sign In
+          </NavLink>
         ) : (
           <button
+            type="button"
             className="navbar-btn"
-            onClick={() => { handleLogout(); setMenuOpen(false); }}
+            onClick={() => {
+              handleLogout();
+              closeMenu();
+            }}
           >
-            Logout
+            Sign Out
           </button>
         )}
       </div>
 
-      {/* Hamburger for mobile */}
-      <div
-        className={`navbar-hamburger ${menuOpen ? 'open' : ''}`}
+      {/* ================= MOBILE TOGGLE ================= */}
+      <button
+        className={`navbar-hamburger ${menuOpen ? "open" : ""}`}
         onClick={() => setMenuOpen(!menuOpen)}
-        aria-label="Toggle navigation menu"
-        tabIndex="0"
-        role="button"
-        onKeyPress={(e) => { if (e.key === 'Enter') setMenuOpen(!menuOpen); }}
+        aria-label="Toggle menu"
+        aria-expanded={menuOpen}
       >
         <span />
         <span />
         <span />
-      </div>
+      </button>
     </nav>
   );
 }
