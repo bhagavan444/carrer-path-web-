@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from "framer-motion";
 import "./About.css";
 
 function About() {
@@ -9,184 +10,147 @@ function About() {
       <section className="abt-hero">
         <div className="abt-hero-inner">
 
-          <div className="abt-avatar-card">
-            <img
-              src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
-              alt="Developer profile"
-              className="abt-avatar"
-            />
-          </div>
+          {/* BRAND BLOCK (NO FACE ICON) */}
+          <motion.div
+            className="abt-brand-card"
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="brand-mark">PN</div>
+            <div className="brand-text">
+              <h2>PathNex</h2>
+              <span>Career Intelligence</span>
+            </div>
+          </motion.div>
 
-          <div className="abt-intro">
-            <h1 className="abt-name">Career Path AI Platform</h1>
+          <motion.div
+            className="abt-intro"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h1 className="abt-name">PathNex – Career Intelligence Platform</h1>
 
             <p className="abt-title">
               <span className="gradient-text">
-                AI-Driven Career Guidance • Resume Analysis • Skill Mapping
+                AI-Driven Career Guidance • Resume Intelligence • Skill Gap Analysis
               </span>
             </p>
 
             <div className="abt-location">
-              <span><strong>Developed by:</strong> G S S S Bhagavan</span><br />
-              <span><strong>Degree:</strong> B.Tech – Artificial Intelligence & Data Science</span><br />
-              <span><strong>College:</strong> Ramachandra College of Engineering, Eluru</span>
+              <span><strong>Platform Type:</strong> Career Intelligence & Decision Support</span><br />
+              <span><strong>Primary Users:</strong> Students, Professionals, Institutions</span><br />
+              <span><strong>Developed By:</strong> G S S S Bhagavan</span>
             </div>
 
             <blockquote className="abt-quote">
-              “Built with a focus on practical career problems — reducing ambiguity,
-              improving resume quality, and helping users make informed career decisions.”
+              “Designed to reduce uncertainty in career decisions through structured,
+              data-driven insights aligned with industry standards.”
             </blockquote>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* ========================= CONTEXT ========================= */}
-      <section className="abt-card">
-        <h2 className="abt-section-title">Why This Platform Exists</h2>
-        <p className="abt-description">
-          Many students and early-career professionals struggle with unclear career paths,
-          poorly optimized resumes, and lack of structured guidance. This platform was built
-          to address those gaps using a combination of AI-based analysis and guided workflows.
-        </p>
-
-        <p className="abt-description">
-          The goal is not to replace human decision-making, but to support it — by providing
-          faster insights, structured recommendations, and consistent feedback.
-        </p>
+      {/* ========================= TRUST METRICS ========================= */}
+      <section className="abt-metrics">
+        {[
+          ["ATS-Aligned", "Resume evaluation mapped to hiring systems"],
+          ["Multi-Domain", "Engineering, AI, Data & Business"],
+          ["Scalable Design", "Built with modular architecture"],
+          ["Enterprise UX", "Product-company design standards"]
+        ].map(([title, desc], i) => (
+          <motion.div
+            key={i}
+            className="metric-card"
+            whileHover={{ y: -6 }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <h3>{title}</h3>
+            <p>{desc}</p>
+          </motion.div>
+        ))}
       </section>
 
-      {/* ========================= WHAT IT DOES ========================= */}
-      <section className="abt-card">
-        <h2 className="abt-section-title">What the System Does</h2>
+      {/* ========================= PROBLEM CONTEXT ========================= */}
+      <motion.section className="abt-card" whileInView={{ opacity: 1 }} initial={{ opacity: 0 }}>
+        <h2 className="abt-section-title">Problem Context</h2>
+        <p className="abt-description">
+          Career planning is often fragmented — unclear role expectations, unstructured
+          resume reviews, and lack of measurable readiness indicators.
+        </p>
+        <p className="abt-description">
+          PathNex acts as a decision-support system by combining resume intelligence,
+          skill mapping, and role-based roadmaps into one unified workflow.
+        </p>
+      </motion.section>
 
-        <ul className="abt-values">
-          <li>
-            <span className="abt-value-icon">📄</span>
-            <strong>Resume Analysis:</strong> Parses resumes, extracts skills, and evaluates alignment
-            with common job role requirements.
-          </li>
+      {/* ========================= PLATFORM CAPABILITIES ========================= */}
+      <motion.section className="abt-card" whileInView={{ opacity: 1 }} initial={{ opacity: 0 }}>
+        <h2 className="abt-section-title">Platform Capabilities</h2>
 
-          <li>
-            <span className="abt-value-icon">🤖</span>
-            <strong>CareerBot:</strong> Provides contextual guidance, interview preparation tips,
-            and general career-related Q&A.
-          </li>
+        <div className="capability-grid">
+          <div className="capability-card">
+            <h3>Resume Intelligence</h3>
+            <p>Skill extraction, ATS keyword alignment, readiness scoring.</p>
+          </div>
+          <div className="capability-card">
+            <h3>Career Readiness</h3>
+            <p>Quantified readiness indicators aligned with industry roles.</p>
+          </div>
+          <div className="capability-card">
+            <h3>Skill Gap Analysis</h3>
+            <p>Highlights missing competencies per selected domain.</p>
+          </div>
+          <div className="capability-card">
+            <h3>CareerBot Assistant</h3>
+            <p>AI-based contextual guidance and interview preparation.</p>
+          </div>
+        </div>
+      </motion.section>
 
-          <li>
-            <span className="abt-value-icon">📊</span>
-            <strong>Skill Gap Identification:</strong> Highlights missing or weak skills
-            relative to a selected role.
-          </li>
-
-          <li>
-            <span className="abt-value-icon">🧭</span>
-            <strong>Career Roadmaps:</strong> Suggests structured next steps such as skills to learn,
-            certifications, or preparation focus areas.
-          </li>
-        </ul>
-      </section>
-
-      {/* ========================= REALISTIC USE CASES ========================= */}
-      <section className="abt-card">
+      {/* ========================= USE CASES ========================= */}
+      <motion.section className="abt-card" whileInView={{ opacity: 1 }} initial={{ opacity: 0 }}>
         <h2 className="abt-section-title">Intended Use Cases</h2>
 
         <div className="usecase-grid">
-          <div className="usecase">
-            <h3>Students & Fresh Graduates</h3>
-            <p>
-              To understand role expectations, improve resumes, and plan skill development
-              before applying for jobs.
-            </p>
-          </div>
-
-          <div className="usecase">
-            <h3>Placement Cells</h3>
-            <p>
-              As a supporting tool for resume reviews, mock interviews,
-              and structured career guidance.
-            </p>
-          </div>
-
-          <div className="usecase">
-            <h3>Early-Career Professionals</h3>
-            <p>
-              To reassess career direction, identify gaps, and plan transitions
-              into new technical roles.
-            </p>
-          </div>
-
-          <div className="usecase">
-            <h3>Prototype for HR Tools</h3>
-            <p>
-              Can serve as a base for internal screening or career-support systems
-              with further customization.
-            </p>
-          </div>
+          <div className="usecase">Students & Fresh Graduates</div>
+          <div className="usecase">Training & Placement Cells</div>
+          <div className="usecase">Early-Career Professionals</div>
+          <div className="usecase">HR / L&D Prototypes</div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================= TECH STACK ========================= */}
-      <section className="abt-card">
-        <h2 className="abt-section-title">Technical Overview</h2>
+      <motion.section className="abt-card" whileInView={{ opacity: 1 }} initial={{ opacity: 0 }}>
+        <h2 className="abt-section-title">Technical Architecture</h2>
 
         <div className="tech-grid">
-          <div className="tech">
-            <strong>Frontend</strong>
-            <div>React, CSS (Enterprise-style UI), Framer Motion</div>
-          </div>
-
-          <div className="tech">
-            <strong>Backend</strong>
-            <div>Flask / REST APIs</div>
-          </div>
-
-          <div className="tech">
-            <strong>AI / ML</strong>
-            <div>NLP-based parsing, role matching logic</div>
-          </div>
-
-          <div className="tech">
-            <strong>Data</strong>
-            <div>Structured skill datasets, resume text processing</div>
-          </div>
+          <div className="tech"><strong>Frontend</strong><div>React, CSS, Framer Motion</div></div>
+          <div className="tech"><strong>Backend</strong><div>Flask, REST APIs</div></div>
+          <div className="tech"><strong>AI Logic</strong><div>NLP-based parsing & matching</div></div>
+          <div className="tech"><strong>Data</strong><div>Structured skill datasets</div></div>
         </div>
-
-        <p className="abt-description" style={{ marginTop: 16 }}>
-          The system is designed in a modular way so individual components
-          (resume parsing, chatbot, recommendations) can be extended independently.
-        </p>
-      </section>
+      </motion.section>
 
       {/* ========================= ROADMAP ========================= */}
-      <section className="abt-card">
-        <h2 className="abt-section-title">Planned Improvements</h2>
+      <motion.section className="abt-card" whileInView={{ opacity: 1 }} initial={{ opacity: 0 }}>
+        <h2 className="abt-section-title">Planned Enhancements</h2>
         <ol className="roadmap-list">
-          <li>Improve resume parsing accuracy and formatting support</li>
-          <li>Add role-specific interview simulations</li>
-          <li>Introduce basic analytics for career progress tracking</li>
-          <li>Enhance security and data handling for production readiness</li>
+          <li>Advanced resume format handling</li>
+          <li>Role-specific interview simulations</li>
+          <li>Career progress analytics dashboard</li>
+          <li>Production-grade security hardening</li>
         </ol>
-      </section>
+      </motion.section>
 
-      {/* ========================= DEVELOPER ========================= */}
-      <section className="abt-card abt-personal-card">
-        <h2 className="abt-section-title">About the Developer</h2>
-
-        <p className="abt-description">
-          <strong>G S S S Bhagavan</strong> is a B.Tech student specializing in Artificial Intelligence
-          & Data Science. This project reflects a focus on applying AI concepts to
-          real-world career and hiring challenges.
-        </p>
-
-        <div className="abt-profile highlight-box">
-          <div><strong>Focus Areas:</strong> AI, Data Science, Web Applications</div>
-          <div><strong>College:</strong> Ramachandra College of Engineering</div>
-          <div><strong>Location:</strong> Eluru, Andhra Pradesh</div>
-          <div style={{ marginTop: 10 }}>
-            <strong>Email:</strong> gsiva@example.com
-          </div>
-        </div>
-      </section>
+      {/* ========================= FOOTER ========================= */}
+      <footer className="abt-footer">
+        <p>© {new Date().getFullYear()} PathNex • Career Intelligence Platform</p>
+        <p>Designed with enterprise UX & hiring standards in mind</p>
+      </footer>
 
     </main>
   );

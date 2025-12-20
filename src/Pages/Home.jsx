@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import "./Home.css";
 
 /* ===========================
-   Helper Components
+   Helpers
 =========================== */
 
-// Animated KPI Counter
 const AnimatedCounter = ({ end, label }) => {
   const [count, setCount] = useState(0);
 
@@ -28,10 +27,9 @@ const AnimatedCounter = ({ end, label }) => {
   return (
     <motion.div
       className="counter-card"
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
+      whileHover={{ scale: 1.06 }}
+      animate={{ y: [0, -6, 0] }}
+      transition={{ duration: 6, repeat: Infinity }}
     >
       <h3>{count}+</h3>
       <p>{label}</p>
@@ -39,67 +37,82 @@ const AnimatedCounter = ({ end, label }) => {
   );
 };
 
-// Testimonials Slider
-const Testimonials = () => {
-  const data = [
-    { text: "This platform helped me crack my first MNC job.", name: "Priya – Data Analyst" },
-    { text: "Resume score improvement was eye-opening.", name: "Arjun – Software Engineer" },
-    { text: "CareerBot feels like a personal mentor.", name: "Sneha – Cloud Engineer" }
-  ];
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setIndex((i) => (i + 1) % data.length), 4000);
-    return () => clearInterval(t);
-  }, [data.length]);
-
-  return (
-    <motion.div
-      className="testimonial-box"
-      key={index}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-    >
-      <p>“{data[index].text}”</p>
-      <strong>{data[index].name}</strong>
-    </motion.div>
-  );
-};
-
 /* ===========================
-   Main Home Component
+   MAIN HOME
 =========================== */
 
 const Home = () => {
   const navigate = useNavigate();
   const fileRef = useRef(null);
-  const [resume, setResume] = useState(null);
 
-  /* ---------- DARK MODE ---------- */
-  const [darkMode, setDarkMode] = useState(
-    localStorage.getItem("theme") === "dark"
-  );
+  const user = JSON.parse(localStorage.getItem("user_profile"));
+
+  const [resume, setResume] = useState(null);
+  const [careerScore, setCareerScore] = useState(0);
+  const [botOpen, setBotOpen] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false); // New popup state
+
+  /* ---------- DOMAIN & SKILLS ---------- */
+  const domains = {
+    "Software Engineering": ["DSA", "React", "Node.js", "SQL", "System Design"],
+    "Data Science": ["Python", "ML", "Statistics", "Pandas", "SQL"],
+    "AI / ML": ["Python", "Deep Learning", "TensorFlow", "Maths", "NLP"],
+    "Cloud & DevOps": ["AWS", "Docker", "Kubernetes", "Linux", "CI/CD"],
+    "Cyber Security": ["Networking", "Linux", "Ethical Hacking", "SIEM", "Cryptography"],
+    "Business / MBA": ["Excel", "Analytics", "Strategy", "Communication", "Finance"]
+  };
+
+  const [selectedDomain, setSelectedDomain] = useState("Software Engineering");
+  const [selectedSkills, setSelectedSkills] = useState([]);
+
+  /* ---------- THEME ---------- */
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
 
   useEffect(() => {
-    document.body.classList.toggle("dark", darkMode);
-    localStorage.setItem("theme", darkMode ? "dark" : "light");
-  }, [darkMode]);
+    document.body.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
-  const handleResumeUpload = (file) => {
-    setResume(file);
+  /* ---------- CAREER READINESS ---------- */
+  useEffect(() => {
+    let score = 0;
+    if (resume) score += 35;
+    score += Math.min(selectedSkills.length * 10, 35);
+    if (user) score += 30;
+    setCareerScore(score);
+  }, [resume, selectedSkills, user]);
+
+  const toggleSkill = (skill) => {
+    setSelectedSkills((prev) =>
+      prev.includes(skill)
+        ? prev.filter((s) => s !== skill)
+        : [...prev, skill]
+    );
+  };
+
+  /* ========== GET STARTED LOGIC ========== */
+  const handleGetStarted = () => {
+    if (user) {
+      // Already logged in → go directly to predict
+      navigate("/predict");
+    } else {
+      // Not logged in → show popup then redirect to login
+      setShowLoginPrompt(true);
+      setTimeout(() => {
+        navigate("/login");
+      }, 2500); // Give time to read message
+    }
   };
 
   return (
     <main className="home-container">
 
-      {/* DARK MODE TOGGLE */}
+      {/* THEME TOGGLE */}
       <button
         className="dark-toggle"
-        onClick={() => setDarkMode(!darkMode)}
-        aria-label="Toggle dark mode"
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       >
-        {darkMode ? "☀️" : "🌙"}
+        {theme === "dark" ? "☀️" : "🌙"}
       </button>
 
       {/* HERO */}
@@ -107,28 +120,28 @@ const Home = () => {
         className="hero"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
       >
         <h1>
-          AI-Powered <span>Career Path Guidance</span>
+          {user ? `Welcome back, ${user.name}` : "Welcome to Path Nex - "}
+          <span>Career Guidance</span>
         </h1>
         <p>
-          Build job-ready skills, optimize your resume, and
-          navigate your career like professionals in top MNCs.
+          A real-time career intelligence system used for
+          students, professionals, and MNC-ready talent.
         </p>
 
         <div className="hero-actions">
           <motion.button
             className="btn-primary"
-            whileHover={{ scale: 1.05 }}
-            onClick={() => navigate("/signup")}
+            whileHover={{ scale: 1.08 }}
+            onClick={handleGetStarted} // Updated handler
           >
             Get Started
           </motion.button>
 
           <motion.button
             className="btn-outline"
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.08 }}
             onClick={() => navigate("/quiz")}
           >
             Career Quiz
@@ -137,118 +150,203 @@ const Home = () => {
 
         <div className="hero-stats">
           <AnimatedCounter end={1200} label="Careers Mapped" />
-          <AnimatedCounter end={90} label="ATS Success Rate (%)" />
+          <AnimatedCounter end={90} label="ATS Success (%)" />
           <AnimatedCounter end={300} label="Skills Tracked" />
         </div>
       </motion.section>
 
-      {/* FEATURES */}
-      <motion.section
-        className="features"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={{
-          hidden: {},
-          visible: {
-            transition: { staggerChildren: 0.15 }
-          }
-        }}
-      >
-        <h2>Why Smart Career Path?</h2>
+      {/* CAREER READINESS */}
+      <section className="readiness">
+        <h2>Career Readiness Score</h2>
+        <div className="readiness-bar">
+          <motion.div
+            className="readiness-fill"
+            animate={{ width: `${careerScore}%` }}
+            transition={{ duration: 1 }}
+          />
+        </div>
+        <p>{careerScore}% aligned with industry expectations</p>
+      </section>
 
-        <div className="feature-grid">
-          {[
-            ["Resume Intelligence", "ATS-based resume scoring with role-specific feedback."],
-            ["AI CareerBot", "24×7 assistance for career decisions and interview prep."],
-            ["Skill Gap Analysis", "Know exactly what to learn for your dream role."],
-            ["MNC-Ready Roadmap", "Step-by-step growth path used by professionals."]
-          ].map(([title, desc], i) => (
-            <motion.div
-              key={i}
-              className="feature-card"
-              variants={{
-                hidden: { opacity: 0, y: 30 },
-                visible: { opacity: 1, y: 0 }
-              }}
-              whileHover={{ scale: 1.05 }}
+      {/* SKILL GAP – MULTI DOMAIN */}
+      <section className="skills-sim">
+        <h2>Skill Gap Simulator</h2>
+
+        <select
+          value={selectedDomain}
+          onChange={(e) => {
+            setSelectedDomain(e.target.value);
+            setSelectedSkills([]);
+          }}
+        >
+          {Object.keys(domains).map((d) => (
+            <option key={d}>{d}</option>
+          ))}
+        </select>
+
+        <div className="skill-list">
+          {domains[selectedDomain].map((skill) => (
+            <motion.button
+              key={skill}
+              whileHover={{ scale: 1.1 }}
+              className={selectedSkills.includes(skill) ? "active" : ""}
+              onClick={() => toggleSkill(skill)}
             >
-              <h3>{title}</h3>
-              <p>{desc}</p>
-            </motion.div>
+              {skill}
+            </motion.button>
           ))}
         </div>
-      </motion.section>
+
+        <p>
+          Skill Coverage: {selectedSkills.length}/{domains[selectedDomain].length}
+        </p>
+      </section>
 
       {/* RESUME */}
-      <motion.section
-        className="resume-section"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-      >
-        <h2>Check Your Resume Instantly</h2>
-        <p>Upload your resume and receive AI-driven insights.</p>
-
+      <section className="resume-section">
+        <h2>Resume Insights</h2>
         <motion.div
           className="resume-box"
-          whileHover={{ scale: 1.02 }}
+          whileHover={{ scale: 1.03 }}
           onClick={() => fileRef.current.click()}
         >
-          {resume ? <strong>{resume.name}</strong> : "Click or Drag & Drop Resume"}
+          {resume ? resume.name : "Upload Resume"}
         </motion.div>
 
         <input
           ref={fileRef}
           type="file"
-          accept=".pdf,.doc,.docx"
           hidden
-          onChange={(e) => handleResumeUpload(e.target.files[0])}
+          onChange={(e) => setResume(e.target.files[0])}
         />
 
-        <button
-          className="btn-primary"
-          disabled={!resume}
-          onClick={() => navigate("/predict")}
-        >
-          Analyze Resume
-        </button>
-      </motion.section>
+        {resume && (
+          <ul className="resume-insights">
+            <li>✔ ATS Score: 82%</li>
+            <li>✔ Domain Match: {selectedDomain}</li>
+            <li>✔ Missing Skills: {domains[selectedDomain]
+              .filter((s) => !selectedSkills.includes(s))
+              .slice(0, 2)
+              .join(", ")}</li>
+          </ul>
+        )}
+      </section>
 
-      {/* ROADMAP */}
-      <motion.section className="roadmap" whileInView={{ opacity: 1 }} initial={{ opacity: 0 }}>
-        <h2>Your Career Journey</h2>
-        <ul>
-          <li>🎯 Choose Target Role</li>
-          <li>📚 Learn Required Skills</li>
-          <li>📄 Optimize Resume</li>
-          <li>💼 Crack Interviews</li>
-          <li>🚀 Career Growth</li>
-        </ul>
-      </motion.section>
+      {/* ROADMAP – REALTIME */}
+      <section className="roadmap">
+        <h2>Industry Career Roadmap</h2>
+        <div className="timeline">
+          {["Foundation", "Skill Mastery", "Projects", "Internships", "MNC Role"].map(
+            (step, i) => (
+              <motion.div
+                key={step}
+                className="timeline-step"
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 4 + i, repeat: Infinity }}
+              >
+                {step}
+              </motion.div>
+            )
+          )}
+        </div>
+      </section>
 
-      {/* TESTIMONIALS */}
-      <motion.section className="testimonials" whileInView={{ opacity: 1 }} initial={{ opacity: 0 }}>
-        <h2>What Users Say</h2>
-        <Testimonials />
-      </motion.section>
+      {/* ACHIEVEMENTS */}
+      <section className="badges">
+        <h2>Professional Achievements</h2>
+        <div className="badge-list">
+          {resume && <span>📄 Resume Verified</span>}
+          {selectedSkills.length >= 3 && <span>🧠 Skill Explorer</span>}
+          {selectedSkills.length >= 5 && <span>🏆 Domain Specialist</span>}
+          {careerScore >= 80 && <span>🚀 MNC-Ready Talent</span>}
+        </div>
+      </section>
 
-      {/* CTA */}
-      <motion.section className="final-cta" whileInView={{ scale: 1 }} initial={{ scale: 0.95 }}>
-        <h2>Start Your Career Like a Pro</h2>
-        <p>Join students and professionals preparing for top companies.</p>
-        <button className="btn-primary" onClick={() => navigate("/signup")}>
-          Start Now
-        </button>
-      </motion.section>
+      {/* TRUST */}
+      <section className="trust">
+        <p>✔ Role-Based Skill Mapping</p>
+        <p>✔ Education-Independent Career Paths</p>
+        <p>✔ Enterprise Hiring Standards</p>
+      </section>
+
+      {/* CAREERBOT */}
+      <button className="careerbot-fab" onClick={() => setBotOpen(true)}>
+        🤖
+      </button>
+
+      <AnimatePresence>
+        {botOpen && (
+          <motion.div
+            className="bot-modal"
+            initial={{ scale: 0.85, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <h3>CareerBot</h3>
+            <p>Ask career questions across all domains.</p>
+            <button onClick={() => navigate("/chat")}>Open Assistant</button>
+            <button onClick={() => setBotOpen(false)}>Close</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* LOGIN PROMPT POPUP */}
+      <AnimatePresence>
+        {showLoginPrompt && (
+          <motion.div
+            className="login-prompt-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="login-prompt-card"
+              initial={{ scale: 0.8, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 50 }}
+              transition={{ type: "spring", damping: 20 }}
+            >
+              <h3>🔐 Login Required</h3>
+              <p>To access personalized predictions and resume analysis, please log in first.</p>
+              <p>Redirecting you to login page...</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* FOOTER */}
-      <footer className="footer">
-        <p>© {new Date().getFullYear()} Smart Career Path</p>
+      <footer className="footer enterprise-footer">
+        <div className="footer-grid">
+          <div>
+            <h4>PathNex</h4>
+            <p>Universal career intelligence platform.</p>
+          </div>
+          <div>
+            <h5>Domains</h5>
+            <p>Engineering</p>
+            <p>Data & AI</p>
+            <p>Business</p>
+          </div>
+          <div>
+            <h5>Education</h5>
+            <p>B.Tech / B.Sc</p>
+            <p>MBA / MCA</p>
+            <p>Diploma</p>
+          </div>
+          <div>
+            <h5>Standards</h5>
+            <p>MNC Hiring</p>
+            <p>ATS Systems</p>
+          </div>
+        </div>
+
+        <div className="footer-bottom">
+          © {new Date().getFullYear()} PathNex. Career Intelligence Engine.
+        </div>
       </footer>
 
     </main>
   );
 };
 
-export default Home;  
+export default Home;

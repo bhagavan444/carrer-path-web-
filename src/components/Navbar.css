@@ -1,182 +1,247 @@
-/* =========================
-   BASE
-========================= */
+/* =====================================================
+   NAVBAR – MNC / SAAS GRADE (OpenAI, Stripe Inspired)
+   ===================================================== */
+
+:root {
+  --nav-bg: black;
+  --nav-border: rgba(255, 255, 255, 0.08);
+  --text: #e5e7eb;
+  --text-muted: #9ca3af;
+  --accent: #38bdf8;
+  --accent-strong: #6366f1;
+  --danger: #ef4444;
+  --radius: 12px;
+  --blur: blur(14px);
+}
+
+/* ================= BASE ================= */
+
 .navbar {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background:white;
-  border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 36px; /* more breathing room */
-  transition: background 0.3s ease, box-shadow 0.3s ease;
+  padding: 0.9rem 1.6rem;
+  background: var(--nav-bg);
+  backdrop-filter: var(--blur);
+  border-bottom: 1px solid var(--nav-border);
 }
 
-/* Dark mode */
-body.dark .navbar {
-  background: #020617;
-  border-color: #1e293b;
-}
+/* ================= BRAND ================= */
 
-/* =========================
-   LOGO
-========================= */
-.navbar-logo a {
-  font-size: 1.25rem; /* slightly bigger */
-  font-weight: 700;
-  color: #111827;
+.navbar-logo {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: white;
   text-decoration: none;
-  letter-spacing: 0.3px;
+  letter-spacing: -0.02em;
 }
 
-body.dark .navbar-logo a {
-  color: #e5e7eb;
+.navbar-logo span {
+  color: var(--accent);
 }
 
-/* =========================
-   LINKS
-========================= */
+/* ================= LINKS ================= */
+
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 30px; /* increased spacing */
+  gap: 1.5rem;
 }
 
 .navbar-links a {
-  font-size: 1rem; /* increased size */
-  font-weight: 500;
-  color: #374151;
+  color: var(--text-muted);
   text-decoration: none;
-  padding: 8px 4px;
-  position: relative;
-  transition: color 0.25s ease;
-}
-
-body.dark .navbar-links a {
-  color: #9ca3af;
-}
-
-/* Hover */
-.navbar-links a:hover {
-  color: #2563eb;
-}
-
-/* Active link */
-.navbar-links a.active {
-  color: #2563eb;
   font-weight: 600;
+  font-size: 1rem;
+  position: relative;
+  transition: color 0.2s ease;
 }
 
-/* Active underline – subtle & clean */
+.navbar-links a:hover {
+  color: var(--text);
+}
+
+.navbar-links a.active {
+  color: var(--accent);
+}
+
 .navbar-links a.active::after {
   content: "";
   position: absolute;
-  bottom: -8px;
+  bottom: -6px;
   left: 0;
   width: 100%;
   height: 2px;
-  background: #2563eb;
+  background: var(--accent);
   border-radius: 2px;
 }
 
-/* =========================
-   ACTION BUTTON
-========================= */
-.navbar-btn {
-  margin-left: 10px;
-  padding: 10px 20px; /* more clickable */
-  border-radius: 10px;
-  border: 1px solid #2563eb;
-  background: #2563eb;
-  color: #ffffff;
-  font-size: 0.95rem;
+/* Highlighted link */
+.highlight {
+  color: white !important;
   font-weight: 600;
+}
+
+/* ================= PROFILE BUTTON ================= */
+
+.navbar-profile-wrapper {
+  position: relative;
+}
+
+.navbar-profile-btn {
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
-  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
 }
 
-.navbar-btn:hover {
-  background: #1e40af;
-  border-color: #1e40af;
+/* Avatar */
+.profile-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: white;
+  background: linear-gradient(135deg, #6366f1, #22d3ee);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Dark mode button */
-body.dark .navbar-btn {
-  background: #2563eb;
-  border-color: #2563eb;
+.profile-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
 }
 
-/* =========================
-   HAMBURGER
-========================= */
-.navbar-hamburger {
+/* ================= DROPDOWN ================= */
+
+.profile-dropdown {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  width: 230px;
+  background:grey;
+  border: 1px solid var(--nav-border);
+  border-radius: var(--radius);
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+  padding: 0.7rem;
+  animation: dropdownIn 0.18s ease;
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* User info */
+.profile-info {
+  padding: 0.6rem 0.5rem 0.7rem;
+}
+
+.profile-info strong {
+  display: block;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.profile-info span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+/* Divider */
+.profile-divider {
+  height: 1px;
+  background: var(--nav-border);
+  margin: 0.5rem 0;
+}
+
+/* Dropdown buttons */
+.profile-dropdown button {
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.profile-dropdown button:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+/* Logout */
+.logout-btn {
+  color: var(--danger);
+}
+
+/* ================= LOGIN ICON (LOGGED OUT) ================= */
+
+.login-avatar .profile-avatar {
+  background: linear-gradient(135deg, #475569, #64748b);
+  font-size: 1rem;
+}
+
+/* ================= HAMBURGER ================= */
+
+.navbar-toggle {
   display: none;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   background: none;
   border: none;
   cursor: pointer;
 }
 
-.navbar-hamburger span {
-  width: 24px;
+.navbar-toggle span {
+  width: 22px;
   height: 2px;
-  background: #111827;
-  transition: all 0.3s ease;
+  background: white;
+  transition: 0.3s;
 }
 
-body.dark .navbar-hamburger span {
-  background: #e5e7eb;
+.navbar-toggle.active span:nth-child(1) {
+  transform: rotate(45deg) translateY(6px);
+}
+.navbar-toggle.active span:nth-child(2) {
+  opacity: 0;
+}
+.navbar-toggle.active span:nth-child(3) {
+  transform: rotate(-45deg) translateY(-6px);
 }
 
-/* =========================
-   MOBILE
-========================= */
-@media (max-width: 768px) {
-  .navbar {
-    padding: 14px 22px;
-  }
+/* ================= MOBILE ================= */
 
-  .navbar-hamburger {
-    display: flex;
-  }
-
+@media (max-width: 900px) {
   .navbar-links {
-    position: absolute;
-    top: 68px;
-    right: 0;
-    width: 100%;
-    background: #ffffff;
+    position: fixed;
+    inset: 64px 0 auto 0;
+    background: rgba(15, 18, 28, 0.98);
+    backdrop-filter: blur(18px);
     flex-direction: column;
-    align-items: flex-start;
-    gap: 18px;
-    padding: 24px 28px;
-    border-bottom: 1px solid #e5e7eb;
-    display: none;
+    padding: 1.6rem;
+    gap: 1.4rem;
+    transform: translateY(-120%);
+    transition: transform 0.3s ease;
+    border-bottom: 1px solid var(--nav-border);
   }
 
-  body.dark .navbar-links {
-    background: #020617;
-    border-color: #1e293b;
+  .navbar-links.open {
+    transform: translateY(0);
   }
 
-  .navbar-links.active {
+  .navbar-toggle {
     display: flex;
   }
-
-  .navbar-links a {
-    font-size: 1.05rem;
-  }
-
-  .navbar-links a.active::after {
-    display: none;
-  }
-
-  .navbar-btn {
-    margin-top: 8px;
-  }
 }
-/* =========================
-   RESPONSIVE ADJUSTMENTS

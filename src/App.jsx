@@ -9,7 +9,10 @@ import Chat from "./pages/Chat";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Login from "./pages/Login";
-import Plans from "./pages/Plans"; // ✅ Import the Plans page
+import Plans from "./pages/Plans";
+import Quiz from "./pages/Quiz";
+import Admin from "./pages/Admin"; // ✅ Added Admin page import
+
 import { auth } from "./firebase"; // Import Firebase auth for logout
 
 function App() {
@@ -34,6 +37,8 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login handleLogin={() => {}} />} />
         <Route path="/plans" element={<Plans />} />
+        <Route path="/quiz" element={<Quiz />} />
+        <Route path="/admin" element={<Admin />} /> {/* ✅ New Admin route */}
       </Routes>
     </Router>
   );

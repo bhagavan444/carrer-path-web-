@@ -8,19 +8,35 @@ function Contact() {
 
         {/* ================= HEADER ================= */}
         <header className="contact-header">
+          <div className="contact-status">
+            <span className="status-dot" />
+            <span>Open to Opportunities</span>
+          </div>
+
           <h1 className="contact-title">Contact</h1>
           <p className="contact-subtitle">
-            Open to opportunities, collaborations, and professional discussions.
+            Professional communication for roles, collaborations, and technical discussions.
           </p>
         </header>
+
+        {/* ================= ROLE TAGS ================= */}
+        <div className="contact-roles">
+          <span>AI / ML Engineer</span>
+          <span>Full-Stack Developer</span>
+          <span>Data Science</span>
+        </div>
 
         {/* ================= INTRO ================= */}
         <p className="contact-intro">
           I am a developer with a strong focus on{" "}
           <strong>Artificial Intelligence, Full-Stack Development, and Data Science</strong>.
-          I am currently open to entry-level roles, internships, project collaborations,
-          and technical discussions. If you are a recruiter, hiring manager, or
-          fellow engineer, I would be happy to connect.
+          I build production-style applications with an emphasis on clean architecture,
+          scalability, and real-world use cases.
+        </p>
+
+        <p className="contact-intro">
+          I am currently open to <strong>entry-level roles, internships, project collaborations</strong>,
+          and structured technical discussions with professionals and teams.
         </p>
 
         <div className="contact-divider" />
@@ -49,11 +65,11 @@ function Contact() {
 
         <div className="contact-divider" />
 
-        {/* ================= PROFILES ================= */}
+        {/* ================= PROFESSIONAL PROFILES ================= */}
         <section>
           <h2 className="contact-section-title">Professional Profiles</h2>
           <p className="contact-note">
-            Access my code, projects, and professional background.
+            Code repositories, projects, and professional background.
           </p>
 
           <div className="contact-socials">
@@ -87,22 +103,35 @@ function Contact() {
 
         <div className="contact-divider" />
 
-        {/* ================= VALUE ================= */}
+        {/* ================= PROFESSIONAL VALUE ================= */}
         <section className="contact-extra">
           <h2 className="contact-section-title">Professional Strengths</h2>
 
           <ul className="contact-features">
-            <li>Strong foundation in AI, Machine Learning, and Data Science concepts</li>
+            <li>Strong foundation in AI, Machine Learning, and Data Science</li>
             <li>Hands-on experience with MERN Stack, Python, Flask, and Deep Learning</li>
-            <li>Experience building end-to-end, production-style applications</li>
-            <li>Focus on clean code, maintainability, and scalable design</li>
-            <li>Adaptable learner with a problem-solving mindset</li>
+            <li>Built end-to-end, production-style web applications</li>
+            <li>Focus on maintainable code and scalable system design</li>
+            <li>Analytical mindset with continuous learning approach</li>
           </ul>
 
           <blockquote className="contact-quote">
             “I focus on building practical, reliable software that delivers
-            real value and can scale with evolving requirements.”
+            real value and scales with evolving requirements.”
           </blockquote>
+        </section>
+
+        <div className="contact-divider" />
+
+        {/* ================= QUICK INTENT ================= */}
+        <section className="contact-intent">
+          <h2 className="contact-section-title">How Can I Help?</h2>
+
+          <div className="intent-grid">
+            <div>Hiring / Internship Opportunity</div>
+            <div>Project Collaboration</div>
+            <div>Technical Discussion</div>
+          </div>
         </section>
 
         {/* ================= CTA ================= */}

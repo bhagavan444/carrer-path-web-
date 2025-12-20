@@ -7,48 +7,55 @@ import { useWindowSize } from "react-use";
 import {
   PieChart, Pie, Cell,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, CartesianGrid
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from "recharts";
 import "./Predict.css";
 
-/* ===============================
-   CONFIG
-================================ */
+/* ================= CONFIG ================= */
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const COLORS = ["#2563eb", "#10b981", "#f59e0b"];
 
-/* ===============================
-   COMPONENT
-================================ */
+/* ================= COMPONENT ================= */
 export default function Predict() {
   const [resumeFile, setResumeFile] = useState(null);
   const [domainChoice, setDomainChoice] = useState("");
   const [userInterest, setUserInterest] = useState("");
   const [aiSuggested, setAiSuggested] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [result, setResult] = useState(null);
   const [shareUrl, setShareUrl] = useState(null);
+  const [showWhy, setShowWhy] = useState(false);
 
   const reportRef = useRef(null);
   const { width, height } = useWindowSize();
 
-  /* ===============================
-     FILE
-  ================================ */
+  /* ================= FILE ================= */
   const handleFileChange = (e) => {
     setResumeFile(e.target.files[0]);
     setResult(null);
   };
 
-  /* ===============================
-     API CALL
-  ================================ */
+  /* ================= SMART LOADING ================= */
+  const loadingMessages = [
+    "Parsing resume content…",
+    "Extracting skills & keywords…",
+    "Matching MNC benchmarks…",
+    "Generating career roadmap…",
+    "Finalizing report…"
+  ];
+
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setInterval(() => {
+      setLoadingStep((s) => (s + 1) % loadingMessages.length);
+    }, 1200);
+    return () => clearInterval(timer);
+  }, [loading]);
+
+  /* ================= API ================= */
   const handleSubmit = async () => {
-    if (!resumeFile) {
-      alert("Please upload a resume.");
-      return;
-    }
+    if (!resumeFile) return alert("Please upload a resume.");
 
     const formData = new FormData();
     formData.append("resume", resumeFile);
@@ -59,20 +66,16 @@ export default function Predict() {
     try {
       setLoading(true);
       const res = await axios.post(`${API_BASE_URL}/predict`, formData);
-
-      /* Backend already sends final JSON */
       setResult(res.data);
       localStorage.setItem("careerReport", JSON.stringify(res.data));
-    } catch (err) {
+    } catch {
       alert("Failed to analyze resume.");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ===============================
-     EXPORT
-  ================================ */
+  /* ================= EXPORT ================= */
   const downloadPDF = async () => {
     const canvas = await html2canvas(reportRef.current, { scale: 2 });
     const img = canvas.toDataURL("image/png");
@@ -85,21 +88,35 @@ export default function Predict() {
 
   const createShareLink = () => {
     const blob = new Blob([JSON.stringify(result)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    setShareUrl(url);
+    setShareUrl(URL.createObjectURL(blob));
   };
 
-  /* ===============================
-     RENDER
-  ================================ */
+  /* ================= HELPERS ================= */
+  const scoreLabel =
+    result?.score >= 80 ? "MNC Ready" :
+    result?.score >= 60 ? "Industry Ready" :
+    "Skill Enhancement Needed";
+
+  const atsStatus =
+    result?.score >= 80 ? "High ATS Compatibility" :
+    result?.score >= 60 ? "Moderate ATS Compatibility" :
+    "Low ATS Compatibility";
+
+  /* ================= RENDER ================= */
   return (
     <div className="predict-container">
       {result && <Confetti width={width} height={height} recycle={false} />}
 
+      {/* HEADER */}
       <header className="predict-header">
         <h1>AI Resume Analyzer</h1>
-        <p>Industry-grade career intelligence report</p>
+        <p>Enterprise-grade career intelligence report</p>
       </header>
+
+      {/* STEP INDICATOR */}
+      <div className="step-indicator">
+        Upload → Analyze → Insights → Roadmap → Growth
+      </div>
 
       {/* FORM */}
       <section className="predict-form">
@@ -127,7 +144,7 @@ export default function Predict() {
         </label>
 
         <button onClick={handleSubmit} disabled={loading}>
-          {loading ? "Analyzing..." : "Generate Report"}
+          {loading ? loadingMessages[loadingStep] : "Generate Report"}
         </button>
       </section>
 
@@ -136,7 +153,27 @@ export default function Predict() {
         <section className="result-section" ref={reportRef}>
           <h2>Career Analysis Report</h2>
 
-          {/* SCORE */}
+          {/* EXEC SUMMARY */}
+          <div className="executive-summary">
+            <p><strong>Best Fit Role:</strong> {result.roles[0]}</p>
+            <p><strong>Industry Readiness:</strong> {scoreLabel}</p>
+            <p><strong>Growth Potential:</strong> Strong</p>
+          </div>
+
+          {/* ATS SCORE (NEW FEATURE) */}
+          <div className="ats-score-box">
+            <h3>ATS Compatibility Score</h3>
+            <p className="ats-percent">{result.score}%</p>
+            <div className="ats-bar">
+              <div
+                className="ats-fill"
+                style={{ width: `${result.score}%` }}
+              />
+            </div>
+            <p className="ats-status">{atsStatus}</p>
+          </div>
+
+          {/* SCORE CHART */}
           <ResponsiveContainer width="100%" height={240}>
             <PieChart>
               <Pie
@@ -153,8 +190,21 @@ export default function Predict() {
               </Pie>
             </PieChart>
           </ResponsiveContainer>
+          <p className="score-label">{scoreLabel}</p>
 
-          {/* ASPECT SCORES */}
+          {/* WHY SCORE */}
+          <button className="link-btn" onClick={() => setShowWhy(!showWhy)}>
+            Why this score?
+          </button>
+          {showWhy && (
+            <ul className="why-score">
+              <li>✔ Strong technical keywords</li>
+              <li>✔ Relevant projects</li>
+              <li>✖ Missing cloud exposure</li>
+            </ul>
+          )}
+
+          {/* ASPECTS */}
           <ResponsiveContainer width="100%" height={260}>
             <RadarChart data={result.aspectScores}>
               <PolarGrid />
@@ -166,28 +216,24 @@ export default function Predict() {
 
           {/* ROLES */}
           <h3>Recommended Roles</h3>
-          <ul>
-            {result.roles.map((r, i) => (
-              <li key={i}>{r}</li>
-            ))}
-          </ul>
+          {result.roles.map((r, i) => (
+            <div key={i} className="role-bar">
+              <span>{r}</span>
+              <div style={{ width: `${80 - i * 10}%` }} />
+            </div>
+          ))}
 
           {/* SKILLS */}
-          <h3>Key Skills Identified</h3>
-          <div className="skill-tags">
+          <h3>Key Skills</h3>
+          <div className="skill-groups">
             {result.skills.map((s, i) => (
               <span key={i}>{s}</span>
             ))}
           </div>
 
-          {/* SUMMARY */}
-          <h3>Profile Summary</h3>
-          <p><strong>Education:</strong> {result.summary.education}</p>
-          <p><strong>Experience:</strong> {result.summary.experience}</p>
-
           {/* ROADMAP */}
           <h3>Career Roadmap</h3>
-          <ol>
+          <ol className="roadmap-list">
             {result.roadmap.map((step, i) => (
               <li key={i}>{step}</li>
             ))}
@@ -213,8 +259,16 @@ export default function Predict() {
             </LineChart>
           </ResponsiveContainer>
 
-          <button onClick={downloadPDF}>Download PDF</button>
-          <button onClick={createShareLink}>Create Share Link</button>
+          {/* CTA */}
+          <div className="cta-actions">
+            <button onClick={downloadPDF}>Download PDF</button>
+            <button onClick={createShareLink}>Share Report</button>
+            <button onClick={() => navigate("/chat")}>Talk to CareerBot</button>
+          </div>
+
+          <p className="trust-note">
+            Your resume is processed securely. No data is shared externally.
+          </p>
         </section>
       )}
 

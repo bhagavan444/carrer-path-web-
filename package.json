@@ -29,7 +29,7 @@
     "react-syntax-highlighter": "^15.6.6",
     "react-tsparticles": "^2.12.2",
     "react-use": "^17.6.0",
-    "recharts": "^3.1.0",
+    "recharts": "^3.6.0",
     "remark-gfm": "^4.0.1",
     "tsparticles": "^3.9.1",
     "tsparticles-engine": "^2.12.0"
