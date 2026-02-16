@@ -1,18 +1,512 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import "./Home.css";
 
-/* ===========================
-   Helpers
-=========================== */
+/* ══════════════════════════════════════════════
+   GLOBAL STYLES — fonts · keyframes · resets
+══════════════════════════════════════════════ */
+const GLOBAL_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  @import url('https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css');
 
-const AnimatedCounter = ({ end, label }) => {
-  const [count, setCount] = useState(0);
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  :root{
+    --w:#ffffff; --paper:#fafbfc; --off:#f5f6f8; --off2:#eff1f4;
+    --border:#e1e4e8; --border2:#d0d5db;
+    --ink:#0f1419; --ink2:#3e4954; --ink3:#6b7683; --ink4:#9ea5b0;
+    --accent:#4f46e5; --accent2:#7c3aed; --accent3:#0ea5e9;
+    --success:#10b981; --warning:#f59e0b; --danger:#ef4444;
+    --display:'Playfair Display',serif;
+    --sans:'Plus Jakarta Sans',sans-serif;
+    --mono:'JetBrains Mono',monospace;
+  }
+
+  html{scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+    overflow-x:hidden;cursor:none;-webkit-font-smoothing:antialiased;
+    line-height:1.6}
+  ::selection{background:rgba(79,70,229,0.12)}
+  ::-webkit-scrollbar{width:4px}
+  ::-webkit-scrollbar-track{background:var(--paper)}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+  /* ── keyframes ── */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes slideLeft{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes slideRight{from{opacity:0;transform:translateX(-60px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes scaleIn{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  @keyframes floatSlow{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-15px) rotate(2deg)}}
+  @keyframes marqueeX{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  @keyframes gradShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+  @keyframes ripple{0%{transform:scale(1);opacity:0.6}100%{transform:scale(2.4);opacity:0}}
+  @keyframes shimmer{0%{background-position:-1000px 0}100%{background-position:1000px 0}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+  @keyframes dash{to{stroke-dashoffset:0}}
+  @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(79,70,229,.3)}50%{box-shadow:0 0 40px rgba(79,70,229,.6)}}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes rotateIn{from{opacity:0;transform:rotate(-10deg) scale(0.9)}to{opacity:1;transform:rotate(0) scale(1)}}
+  @keyframes wiggle{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-2deg)}75%{transform:rotate(2deg)}}
+  @keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.1)}28%{transform:scale(1)}42%{transform:scale(1.1)}70%{transform:scale(1)}}
+
+  /* ── scroll reveal ── */
+  .reveal{opacity:0;transform:translateY(32px);
+    transition:opacity .7s cubic-bezier(.4,0,.2,1),transform .7s cubic-bezier(.4,0,.2,1)}
+  .reveal.visible{opacity:1;transform:translateY(0)}
+`;
+
+function useGlobalStyles() {
+  useEffect(() => {
+    const id = "pathnex-global";
+    if (document.getElementById(id)) return;
+    const s = document.createElement("style");
+    s.id = id; s.textContent = GLOBAL_CSS;
+    document.head.appendChild(s);
+  }, []);
+}
+
+function useReveal() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { el.classList.add("visible"); obs.disconnect(); } },
+      { threshold: 0.1 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return ref;
+}
+
+/* ══════════════════════════════════════════════
+   MAGNETIC CURSOR
+══════════════════════════════════════════════ */
+function MagneticCursor() {
+  const ringRef = useRef(null);
+  const dotRef  = useRef(null);
+  const pos     = useRef({ x: -200, y: -200 });
+  const cur     = useRef({ x: -200, y: -200 });
+  const rafId   = useRef(null);
+  const [label,   setLabel  ] = useState("");
+  const [big,     setBig    ] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  const [hidden,  setHidden ] = useState(false);
 
   useEffect(() => {
+    const ring = ringRef.current;
+    const dot  = dotRef.current;
+    let bigState = false;
+
+    const onMove = (e) => {
+      pos.current = { x: e.clientX, y: e.clientY };
+      dot.style.transform = `translate(${e.clientX - 4}px,${e.clientY - 4}px)`;
+
+      const el  = document.elementFromPoint(e.clientX, e.clientY);
+      const mag = el?.closest("[data-mag]");
+      document.querySelectorAll("[data-mag]").forEach(m => {
+        if (m !== mag) m.style.transform = "";
+      });
+      if (mag) {
+        const r  = mag.getBoundingClientRect();
+        const ox = (e.clientX - (r.left + r.width  / 2)) * 0.32;
+        const oy = (e.clientY - (r.top  + r.height / 2)) * 0.32;
+        mag.style.transform = `translate(${ox}px,${oy}px)`;
+        setLabel(mag.dataset.magLabel || "");
+        bigState = true; setBig(true);
+      } else {
+        setLabel("");
+        const isBtn = el?.closest("button,a,[data-clickable]");
+        bigState = !!isBtn; setBig(!!isBtn);
+      }
+    };
+    const onDown  = () => setPressed(true);
+    const onUp    = () => setPressed(false);
+    const onLeave = () => setHidden(true);
+    const onEnter = () => setHidden(false);
+
+    const tick = () => {
+      const ease = bigState ? 0.14 : 0.2;
+      cur.current.x += (pos.current.x - cur.current.x) * ease;
+      cur.current.y += (pos.current.y - cur.current.y) * ease;
+      const size = bigState ? 50 : 38;
+      ring.style.transform = `translate(${cur.current.x - size/2}px,${cur.current.y - size/2}px)`;
+      ring.style.width  = `${size}px`;
+      ring.style.height = `${size}px`;
+      rafId.current = requestAnimationFrame(tick);
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: true });
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("mouseup",   onUp);
+    document.documentElement.addEventListener("mouseleave", onLeave);
+    document.documentElement.addEventListener("mouseenter", onEnter);
+    rafId.current = requestAnimationFrame(tick);
+
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("mouseup",   onUp);
+      document.documentElement.removeEventListener("mouseleave", onLeave);
+      document.documentElement.removeEventListener("mouseenter", onEnter);
+      cancelAnimationFrame(rafId.current);
+    };
+  }, []);
+
+  return (
+    <>
+      <div ref={ringRef} style={{
+        position:"fixed", top:0, left:0, pointerEvents:"none", zIndex:99999,
+        borderRadius:"50%",
+        border: `2px solid ${pressed ? "var(--accent)" : big ? "var(--accent)" : "var(--ink)"}`,
+        background: pressed ? "rgba(79,70,229,0.08)" : big ? "rgba(79,70,229,0.05)" : "transparent",
+        opacity: hidden ? 0 : 1,
+        display:"flex", alignItems:"center", justifyContent:"center",
+        transition:"border-color .2s, background .2s, opacity .3s",
+        mixBlendMode:"difference",
+      }}>
+        {label && (
+          <span style={{
+            fontSize:9, fontFamily:"var(--mono)", fontWeight:600,
+            color:"var(--accent)", letterSpacing:".12em", whiteSpace:"nowrap",
+            animation:"fadeIn .18s ease",
+          }}>{label}</span>
+        )}
+      </div>
+      <div ref={dotRef} style={{
+        position:"fixed", top:0, left:0,
+        width:8, height:8, borderRadius:"50%",
+        background: pressed ? "var(--accent)" : "var(--ink)",
+        pointerEvents:"none", zIndex:100000,
+        opacity: hidden ? 0 : 1,
+        transition:"background .18s, opacity .3s, transform .05s linear",
+      }}/>
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   DATA
+══════════════════════════════════════════════ */
+const TECH_STACK = [
+  {icon:"devicon-python-plain colored",         label:"Python"},
+  {icon:"devicon-react-original colored",       label:"React"},
+  {icon:"devicon-nodejs-plain colored",         label:"Node.js"},
+  {icon:"devicon-fastapi-plain colored",        label:"FastAPI"},
+  {icon:"devicon-postgresql-plain colored",     label:"PostgreSQL"},
+  {icon:"devicon-mongodb-plain colored",        label:"MongoDB"},
+  {icon:"devicon-tensorflow-original colored",  label:"TensorFlow"},
+  {icon:"devicon-pytorch-original colored",     label:"PyTorch"},
+  {icon:"devicon-scikitlearn-plain colored",    label:"Scikit-learn"},
+  {icon:"devicon-pandas-plain colored",         label:"Pandas"},
+  {icon:"devicon-docker-plain colored",         label:"Docker"},
+  {icon:"devicon-kubernetes-plain colored",     label:"Kubernetes"},
+  {icon:"devicon-amazonwebservices-plain-wordmark colored", label:"AWS"},
+  {icon:"devicon-redis-plain colored",          label:"Redis"},
+  {icon:"devicon-jupyter-plain colored",        label:"Jupyter"},
+  {icon:"devicon-git-plain colored",            label:"Git"},
+];
+
+const DOMAINS = {
+  "Software Engineering": [
+    { name: "Data Structures & Algorithms", icon: "devicon-cplusplus-plain colored" },
+    { name: "React", icon: "devicon-react-original colored" },
+    { name: "Angular", icon: "devicon-angularjs-plain colored" },
+    { name: "Vue.js", icon: "devicon-vuejs-plain colored" },
+    { name: "Node.js", icon: "devicon-nodejs-plain colored" },
+    { name: "Express", icon: "devicon-express-original" },
+    { name: "MongoDB", icon: "devicon-mongodb-plain colored" },
+    { name: "PostgreSQL", icon: "devicon-postgresql-plain colored" },
+    { name: "MySQL", icon: "devicon-mysql-plain colored" },
+    { name: "GraphQL", icon: "devicon-graphql-plain colored" },
+    { name: "REST APIs", icon: "devicon-fastapi-plain colored" },
+    { name: "Git", icon: "devicon-git-plain colored" },
+    { name: "Docker", icon: "devicon-docker-plain colored" },
+    { name: "TypeScript", icon: "devicon-typescript-plain colored" },
+    { name: "JavaScript", icon: "devicon-javascript-plain colored" },
+    { name: "System Design", icon: "devicon-apache-plain colored" },
+    { name: "Redux", icon: "devicon-redux-original colored" },
+    { name: "Next.js", icon: "devicon-nextjs-original" },
+  ],
+  "Data Science": [
+    { name: "Python", icon: "devicon-python-plain colored" },
+    { name: "R Programming", icon: "devicon-r-original colored" },
+    { name: "Pandas", icon: "devicon-pandas-plain colored" },
+    { name: "NumPy", icon: "devicon-numpy-plain colored" },
+    { name: "Scikit-learn", icon: "devicon-scikitlearn-plain colored" },
+    { name: "Matplotlib", icon: "devicon-matplotlib-plain colored" },
+    { name: "Jupyter", icon: "devicon-jupyter-plain colored" },
+    { name: "SQL", icon: "devicon-mysql-plain colored" },
+    { name: "Statistics", icon: "devicon-matlab-plain colored" },
+    { name: "Data Visualization", icon: "devicon-d3js-plain colored" },
+    { name: "Excel", icon: "devicon-microsoftsqlserver-plain colored" },
+    { name: "Tableau", icon: "devicon-postgresql-plain colored" },
+    { name: "Power BI", icon: "devicon-azure-plain colored" },
+    { name: "Apache Spark", icon: "devicon-apache-plain colored" },
+    { name: "Big Data", icon: "devicon-hadoop-plain colored" },
+  ],
+  "AI / ML": [
+    { name: "Python", icon: "devicon-python-plain colored" },
+    { name: "TensorFlow", icon: "devicon-tensorflow-original colored" },
+    { name: "PyTorch", icon: "devicon-pytorch-original colored" },
+    { name: "Keras", icon: "devicon-keras-plain colored" },
+    { name: "Deep Learning", icon: "devicon-pytorch-original colored" },
+    { name: "Neural Networks", icon: "devicon-tensorflow-original colored" },
+    { name: "NLP", icon: "devicon-python-plain colored" },
+    { name: "Computer Vision", icon: "devicon-opencv-plain colored" },
+    { name: "Scikit-learn", icon: "devicon-scikitlearn-plain colored" },
+    { name: "Mathematics", icon: "devicon-matlab-plain colored" },
+    { name: "Linear Algebra", icon: "devicon-numpy-plain colored" },
+    { name: "Probability", icon: "devicon-r-original colored" },
+    { name: "MLOps", icon: "devicon-kubernetes-plain colored" },
+    { name: "Model Deployment", icon: "devicon-docker-plain colored" },
+    { name: "Feature Engineering", icon: "devicon-pandas-plain colored" },
+  ],
+  "Cloud & DevOps": [
+    { name: "AWS", icon: "devicon-amazonwebservices-plain-wordmark colored" },
+    { name: "Azure", icon: "devicon-azure-plain colored" },
+    { name: "Google Cloud", icon: "devicon-googlecloud-plain colored" },
+    { name: "Docker", icon: "devicon-docker-plain colored" },
+    { name: "Kubernetes", icon: "devicon-kubernetes-plain colored" },
+    { name: "Jenkins", icon: "devicon-jenkins-plain colored" },
+    { name: "GitLab CI/CD", icon: "devicon-gitlab-plain colored" },
+    { name: "GitHub Actions", icon: "devicon-github-original colored" },
+    { name: "Terraform", icon: "devicon-terraform-plain colored" },
+    { name: "Ansible", icon: "devicon-ansible-plain colored" },
+    { name: "Linux", icon: "devicon-linux-plain" },
+    { name: "Bash Scripting", icon: "devicon-bash-plain" },
+    { name: "Nginx", icon: "devicon-nginx-original colored" },
+    { name: "Monitoring", icon: "devicon-grafana-plain colored" },
+    { name: "Prometheus", icon: "devicon-prometheus-original colored" },
+  ],
+  "Cyber Security": [
+    { name: "Networking", icon: "devicon-cisco-plain colored" },
+    { name: "Linux", icon: "devicon-linux-plain" },
+    { name: "Kali Linux", icon: "devicon-debian-plain colored" },
+    { name: "Ethical Hacking", icon: "devicon-bash-plain" },
+    { name: "Penetration Testing", icon: "devicon-firefox-plain colored" },
+    { name: "SIEM Tools", icon: "devicon-splunk-plain colored" },
+    { name: "Cryptography", icon: "devicon-ssl-plain colored" },
+    { name: "Firewalls", icon: "devicon-cisco-plain colored" },
+    { name: "IDS/IPS", icon: "devicon-linux-plain" },
+    { name: "Python", icon: "devicon-python-plain colored" },
+    { name: "Security Protocols", icon: "devicon-ssl-plain colored" },
+    { name: "Vulnerability Assessment", icon: "devicon-firefox-plain colored" },
+    { name: "Risk Management", icon: "devicon-confluence-plain colored" },
+    { name: "Incident Response", icon: "devicon-jira-plain colored" },
+  ],
+  "Web Development": [
+    { name: "HTML5", icon: "devicon-html5-plain colored" },
+    { name: "CSS3", icon: "devicon-css3-plain colored" },
+    { name: "JavaScript", icon: "devicon-javascript-plain colored" },
+    { name: "TypeScript", icon: "devicon-typescript-plain colored" },
+    { name: "React", icon: "devicon-react-original colored" },
+    { name: "Vue.js", icon: "devicon-vuejs-plain colored" },
+    { name: "Angular", icon: "devicon-angularjs-plain colored" },
+    { name: "Svelte", icon: "devicon-svelte-plain colored" },
+    { name: "Tailwind CSS", icon: "devicon-tailwindcss-plain colored" },
+    { name: "Bootstrap", icon: "devicon-bootstrap-plain colored" },
+    { name: "Sass", icon: "devicon-sass-original colored" },
+    { name: "Webpack", icon: "devicon-webpack-plain colored" },
+    { name: "Vite", icon: "devicon-vitejs-plain colored" },
+    { name: "Responsive Design", icon: "devicon-chrome-plain colored" },
+  ],
+  "Mobile Development": [
+    { name: "React Native", icon: "devicon-react-original colored" },
+    { name: "Flutter", icon: "devicon-flutter-plain colored" },
+    { name: "Kotlin", icon: "devicon-kotlin-plain colored" },
+    { name: "Swift", icon: "devicon-swift-plain colored" },
+    { name: "Java", icon: "devicon-java-plain colored" },
+    { name: "Android Studio", icon: "devicon-androidstudio-plain colored" },
+    { name: "Xcode", icon: "devicon-xcode-plain colored" },
+    { name: "Firebase", icon: "devicon-firebase-plain colored" },
+    { name: "SQLite", icon: "devicon-sqlite-plain colored" },
+    { name: "REST APIs", icon: "devicon-fastapi-plain colored" },
+    { name: "Redux", icon: "devicon-redux-original colored" },
+    { name: "App Deployment", icon: "devicon-apple-original" },
+  ],
+  "Backend Development": [
+    { name: "Node.js", icon: "devicon-nodejs-plain colored" },
+    { name: "Python", icon: "devicon-python-plain colored" },
+    { name: "Java", icon: "devicon-java-plain colored" },
+    { name: "Go", icon: "devicon-go-original-wordmark colored" },
+    { name: "C#", icon: "devicon-csharp-plain colored" },
+    { name: "Ruby", icon: "devicon-ruby-plain colored" },
+    { name: "PHP", icon: "devicon-php-plain colored" },
+    { name: "Express.js", icon: "devicon-express-original" },
+    { name: "Django", icon: "devicon-django-plain colored" },
+    { name: "Flask", icon: "devicon-flask-original" },
+    { name: "Spring Boot", icon: "devicon-spring-plain colored" },
+    { name: "FastAPI", icon: "devicon-fastapi-plain colored" },
+    { name: "MongoDB", icon: "devicon-mongodb-plain colored" },
+    { name: "PostgreSQL", icon: "devicon-postgresql-plain colored" },
+    { name: "Redis", icon: "devicon-redis-plain colored" },
+  ],
+  "Game Development": [
+    { name: "Unity", icon: "devicon-unity-plain colored" },
+    { name: "Unreal Engine", icon: "devicon-unrealengine-original colored" },
+    { name: "C++", icon: "devicon-cplusplus-plain colored" },
+    { name: "C#", icon: "devicon-csharp-plain colored" },
+    { name: "Blender", icon: "devicon-blender-original colored" },
+    { name: "3D Modeling", icon: "devicon-maya-plain colored" },
+    { name: "Game Physics", icon: "devicon-cplusplus-plain colored" },
+    { name: "OpenGL", icon: "devicon-opengl-plain colored" },
+    { name: "Godot", icon: "devicon-godot-plain colored" },
+    { name: "Game Design", icon: "devicon-figma-plain colored" },
+  ],
+  "Blockchain": [
+    { name: "Solidity", icon: "devicon-solidity-plain colored" },
+    { name: "Ethereum", icon: "devicon-ethereum-plain colored" },
+    { name: "Web3.js", icon: "devicon-javascript-plain colored" },
+    { name: "Smart Contracts", icon: "devicon-solidity-plain colored" },
+    { name: "Hyperledger", icon: "devicon-linux-plain" },
+    { name: "Cryptography", icon: "devicon-ssl-plain colored" },
+    { name: "DeFi", icon: "devicon-bitcoin-plain colored" },
+    { name: "NFTs", icon: "devicon-ethereum-plain colored" },
+    { name: "Truffle", icon: "devicon-nodejs-plain colored" },
+    { name: "MetaMask", icon: "devicon-firefox-plain colored" },
+  ],
+};
+
+const ROADMAP_STEPS = [
+  "Foundation",
+  "Skill Mastery",
+  "Build Projects",
+  "Internships",
+  "MNC Role"
+];
+
+const CAREER_FEATURES = [
+  {
+    icon: "🎯",
+    title: "Career Path Discovery",
+    desc: "AI-powered career recommendations based on your interests, skills, and market demand. Get personalized suggestions aligned with your goals.",
+    color: "var(--accent)"
+  },
+  {
+    icon: "📊",
+    title: "Skills Gap Analysis",
+    desc: "Identify missing skills for your dream role. Our AI analyzes job requirements and compares them with your current skillset.",
+    color: "var(--accent2)"
+  },
+  {
+    icon: "📄",
+    title: "ATS Resume Optimizer",
+    desc: "Beat applicant tracking systems with AI-optimized resumes. Get real-time feedback on formatting, keywords, and content.",
+    color: "var(--accent3)"
+  },
+  {
+    icon: "💼",
+    title: "Interview Preparation",
+    desc: "Practice with AI-powered mock interviews. Get feedback on your responses and learn industry-specific interview patterns.",
+    color: "var(--success)"
+  },
+  {
+    icon: "🚀",
+    title: "Career Roadmap Builder",
+    desc: "Get step-by-step roadmaps from where you are to where you want to be. Includes timelines, resources, and milestones.",
+    color: "var(--warning)"
+  },
+  {
+    icon: "📈",
+    title: "Market Insights",
+    desc: "Stay updated with real-time salary data, job market trends, and in-demand skills across different industries.",
+    color: "var(--danger)"
+  }
+];
+
+const SUCCESS_STORIES = [
+  {
+    name: "Priya Sharma",
+    role: "Software Engineer at Google",
+    image: "PS",
+    story: "PathNex helped me transition from a non-CS background to landing my dream job at Google. The personalized roadmap was a game-changer.",
+    rating: 5
+  },
+  {
+    name: "Rahul Verma",
+    role: "Data Scientist at Microsoft",
+    image: "RV",
+    story: "The skills gap analysis showed me exactly what to learn. Within 6 months, I went from struggling to getting multiple offers.",
+    rating: 5
+  },
+  {
+    name: "Anjali Mehta",
+    role: "Product Manager at Amazon",
+    image: "AM",
+    story: "The ATS optimizer increased my interview callbacks by 300%. The career intelligence is truly next-level.",
+    rating: 5
+  }
+];
+
+const COMPARISON = [
+  {
+    feature: "Career Assessment",
+    traditional: "Generic personality tests",
+    pathnex: "AI-powered skill & interest mapping"
+  },
+  {
+    feature: "Resume Review",
+    traditional: "Manual review, slow feedback",
+    pathnex: "Instant ATS optimization with AI"
+  },
+  {
+    feature: "Career Roadmap",
+    traditional: "One-size-fits-all advice",
+    pathnex: "Personalized, data-driven roadmaps"
+  },
+  {
+    feature: "Skill Gap Analysis",
+    traditional: "Self-assessment, no validation",
+    pathnex: "AI analysis vs market requirements"
+  },
+  {
+    feature: "Market Insights",
+    traditional: "Outdated salary surveys",
+    pathnex: "Real-time data from 10K+ sources"
+  }
+];
+
+const INDUSTRIES = [
+  { name: "Technology", jobs: "12K+", growth: "+18%", icon: "devicon-react-original colored" },
+  { name: "Data Science", jobs: "8K+", growth: "+24%", icon: "devicon-python-plain colored" },
+  { name: "Cloud Computing", jobs: "6K+", growth: "+32%", icon: "devicon-amazonwebservices-plain-wordmark colored" },
+  { name: "Cybersecurity", jobs: "4K+", growth: "+28%", icon: "devicon-linux-plain" },
+  { name: "AI/ML", jobs: "5K+", growth: "+42%", icon: "devicon-tensorflow-original colored" },
+  { name: "DevOps", jobs: "7K+", growth: "+21%", icon: "devicon-docker-plain colored" },
+];
+
+const FOOTER_COLS = {
+  "Platform": ["Career Analysis", "Skill Assessment", "Resume Insights", "Roadmap Builder", "ATS Checker"],
+  "Domains": ["Software Engineering", "Data Science", "AI / ML", "Cloud & DevOps", "Cyber Security"],
+  "Resources": ["Documentation", "Career Guide", "Blog", "Case Studies", "API Access"],
+  "Company": ["About", "Careers", "Contact", "Privacy Policy", "Terms of Service"],
+};
+
+/* ══════════════════════════════════════════════
+   ANIMATED COUNTER
+══════════════════════════════════════════════ */
+function AnimatedCounter({ end, label, suffix = "" }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting && !started) { setStarted(true); obs.disconnect(); } },
+      { threshold: 0.5 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [started]);
+
+  useEffect(() => {
+    if (!started) return;
     let current = 0;
-    const step = Math.ceil(end / 60);
+    const step = Math.ceil(end / 50);
     const timer = setInterval(() => {
       current += step;
       if (current >= end) {
@@ -20,60 +514,62 @@ const AnimatedCounter = ({ end, label }) => {
         clearInterval(timer);
       }
       setCount(current);
-    }, 25);
+    }, 30);
     return () => clearInterval(timer);
-  }, [end]);
+  }, [started, end]);
 
   return (
-    <motion.div
-      className="counter-card"
-      whileHover={{ scale: 1.06 }}
-      animate={{ y: [0, -6, 0] }}
-      transition={{ duration: 6, repeat: Infinity }}
-    >
-      <h3>{count}+</h3>
-      <p>{label}</p>
-    </motion.div>
+    <div ref={ref} style={{
+      textAlign:"center",
+      animation:"scaleIn .6s ease both",
+    }}>
+      <div style={{
+        fontSize:"clamp(36px,5vw,52px)",
+        fontWeight:800,
+        fontFamily:"var(--sans)",
+        background:"linear-gradient(135deg, var(--accent), var(--accent2))",
+        WebkitBackgroundClip:"text",
+        WebkitTextFillColor:"transparent",
+        backgroundClip:"text",
+        marginBottom:8,
+      }}>
+        {count}{suffix}
+      </div>
+      <div style={{
+        fontSize:13,
+        color:"var(--ink3)",
+        fontWeight:500,
+        letterSpacing:".02em",
+      }}>
+        {label}
+      </div>
+    </div>
   );
-};
+}
 
-/* ===========================
+/* ══════════════════════════════════════════════
    MAIN HOME
-=========================== */
-
-const Home = () => {
+══════════════════════════════════════════════ */
+export default function Home() {
+  useGlobalStyles();
   const navigate = useNavigate();
   const fileRef = useRef(null);
 
-  const user = JSON.parse(localStorage.getItem("user_profile"));
-
-  const [resume, setResume] = useState(null);
-  const [careerScore, setCareerScore] = useState(0);
-  const [botOpen, setBotOpen] = useState(false);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false); // New popup state
-
-  /* ---------- DOMAIN & SKILLS ---------- */
-  const domains = {
-    "Software Engineering": ["DSA", "React", "Node.js", "SQL", "System Design"],
-    "Data Science": ["Python", "ML", "Statistics", "Pandas", "SQL"],
-    "AI / ML": ["Python", "Deep Learning", "TensorFlow", "Maths", "NLP"],
-    "Cloud & DevOps": ["AWS", "Docker", "Kubernetes", "Linux", "CI/CD"],
-    "Cyber Security": ["Networking", "Linux", "Ethical Hacking", "SIEM", "Cryptography"],
-    "Business / MBA": ["Excel", "Analytics", "Strategy", "Communication", "Finance"]
-  };
+  const user = typeof localStorage !== 'undefined' 
+    ? JSON.parse(localStorage.getItem("user_profile") || "null") 
+    : null;
 
   const [selectedDomain, setSelectedDomain] = useState("Software Engineering");
   const [selectedSkills, setSelectedSkills] = useState([]);
+  const [resume, setResume] = useState(null);
+  const [careerScore, setCareerScore] = useState(0);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
-  /* ---------- THEME ---------- */
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
+  const r1 = useReveal(); const r2 = useReveal(); const r3 = useReveal();
+  const r4 = useReveal(); const r5 = useReveal(); const r6 = useReveal();
+  const r7 = useReveal(); const r8 = useReveal();
 
-  useEffect(() => {
-    document.body.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  /* ---------- CAREER READINESS ---------- */
+  // Career score calculation
   useEffect(() => {
     let score = 0;
     if (resume) score += 35;
@@ -90,263 +586,1849 @@ const Home = () => {
     );
   };
 
-  /* ========== GET STARTED LOGIC ========== */
   const handleGetStarted = () => {
     if (user) {
-      // Already logged in → go directly to predict
       navigate("/predict");
     } else {
-      // Not logged in → show popup then redirect to login
       setShowLoginPrompt(true);
       setTimeout(() => {
         navigate("/login");
-      }, 2500); // Give time to read message
+      }, 2500);
     }
   };
 
-  return (
-    <main className="home-container">
+  const noise = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.022'/%3E%3C/svg%3E")`;
 
-      {/* THEME TOGGLE */}
-      <button
-        className="dark-toggle"
-        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      >
-        {theme === "dark" ? "☀️" : "🌙"}
-      </button>
+  return (
+    <div style={{minHeight:"100vh",background:"var(--paper)",position:"relative"}}>
+      <MagneticCursor />
+
+      {/* Paper texture */}
+      <div style={{position:"fixed",inset:0,backgroundImage:noise,
+        backgroundRepeat:"repeat",backgroundSize:"200px",pointerEvents:"none",zIndex:0}}/>
+
+      {/* Subtle grid */}
+      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,
+        backgroundImage:"linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px)",
+        backgroundSize:"80px 80px",opacity:.25}}/>
 
       {/* HERO */}
-      <motion.section
-        className="hero"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h1>
-          {user ? `Welcome back, ${user.name}` : "Welcome to Path Nex - "}
-          <span>Career Guidance</span>
-        </h1>
-        <p>
-          A real-time career intelligence system used for
-          students, professionals, and MNC-ready talent.
-        </p>
+      <section style={{
+        minHeight:"90vh",
+        display:"flex",alignItems:"center",
+        padding:"80px clamp(20px,5vw,80px) 60px",
+        position:"relative",zIndex:1,
+        maxWidth:1400,margin:"0 auto",
+      }}>
+        {/* Gradient orbs */}
+        <div style={{position:"absolute",top:"8%",left:"-10%",width:"50vw",height:"50vw",
+          borderRadius:"50%",background:"radial-gradient(circle,rgba(79,70,229,.08) 0%,transparent 65%)",
+          filter:"blur(70px)",pointerEvents:"none",animation:"float 12s ease-in-out infinite"}}/>
+        <div style={{position:"absolute",bottom:"5%",right:"-8%",width:"45vw",height:"45vw",
+          borderRadius:"50%",background:"radial-gradient(circle,rgba(14,165,233,.06) 0%,transparent 65%)",
+          filter:"blur(80px)",pointerEvents:"none",animation:"float 16s ease-in-out infinite"}}/>
 
-        <div className="hero-actions">
-          <motion.button
-            className="btn-primary"
-            whileHover={{ scale: 1.08 }}
-            onClick={handleGetStarted} // Updated handler
-          >
-            Get Started
-          </motion.button>
+        <div style={{
+          display:"grid",
+          gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))",
+          gap:"clamp(40px,8vw,100px)",
+          alignItems:"center",
+          width:"100%",
+        }}>
+          {/* LEFT */}
+          <div style={{animation:"fadeUp .8s cubic-bezier(.4,0,.2,1) both"}}>
+            {/* Badge */}
+            <div style={{display:"inline-flex",alignItems:"center",gap:10,
+              padding:"6px 16px 6px 8px",borderRadius:20,
+              border:"1.5px solid var(--border)",background:"var(--w)",
+              marginBottom:28,boxShadow:"0 2px 12px rgba(15,20,25,.06)"}}>
+              <div style={{padding:"4px 11px",borderRadius:14,
+                background:"linear-gradient(135deg, var(--accent), var(--accent2))",
+                fontSize:9,fontWeight:700,color:"var(--w)",letterSpacing:".14em",
+                fontFamily:"var(--mono)"}}>
+                AI-POWERED
+              </div>
+              <span style={{fontSize:12,color:"var(--ink3)",fontWeight:500}}>
+                Next-generation career intelligence
+              </span>
+            </div>
 
-          <motion.button
-            className="btn-outline"
-            whileHover={{ scale: 1.08 }}
-            onClick={() => navigate("/quiz")}
-          >
-            Career Quiz
-          </motion.button>
+            {/* H1 */}
+            <h1 style={{
+              fontFamily:"var(--display)",
+              fontSize:"clamp(42px,6.5vw,78px)",
+              fontWeight:400,
+              lineHeight:1.08,
+              marginBottom:24,
+              color:"var(--ink)",
+              letterSpacing:"-.02em",
+            }}>
+              Engineering Career<br/>
+              Intelligence for the<br/>
+              <span style={{
+                fontStyle:"italic",
+                background:"linear-gradient(120deg, var(--accent), var(--accent2), var(--accent3))",
+                backgroundSize:"200% auto",
+                WebkitBackgroundClip:"text",
+                WebkitTextFillColor:"transparent",
+                backgroundClip:"text",
+                animation:"gradShift 4s ease infinite",
+              }}>Next Generation</span>
+            </h1>
+
+            {/* Subtitle */}
+            <p style={{
+              fontSize:"clamp(16px,1.6vw,19px)",
+              color:"var(--ink3)",
+              lineHeight:1.7,
+              maxWidth:520,
+              marginBottom:36,
+              fontWeight:400,
+            }}>
+              AI-powered skill mapping, resume insights, and industry-aligned
+              career roadmaps. Built for students, professionals, and enterprises.
+            </p>
+
+            {/* CTAs */}
+            <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:44}}>
+              <button data-mag data-mag-label="START"
+                onClick={handleGetStarted}
+                style={{
+                  padding:"15px 34px",
+                  borderRadius:10,
+                  border:"none",
+                  background:"linear-gradient(135deg, var(--accent), var(--accent2))",
+                  color:"var(--w)",
+                  fontSize:15,
+                  fontWeight:600,
+                  fontFamily:"var(--sans)",
+                  cursor:"none",
+                  boxShadow:"0 8px 24px rgba(79,70,229,.28)",
+                  transition:"all .3s cubic-bezier(.4,0,.2,1)",
+                }}
+                onMouseEnter={e=>{
+                  e.target.style.transform="translateY(-2px)";
+                  e.target.style.boxShadow="0 12px 32px rgba(79,70,229,.38)";
+                }}
+                onMouseLeave={e=>{
+                  e.target.style.transform="translateY(0)";
+                  e.target.style.boxShadow="0 8px 24px rgba(79,70,229,.28)";
+                }}>
+                Analyze My Career Path
+              </button>
+
+              <button data-mag
+                onClick={()=>navigate("/quiz")}
+                style={{
+                  padding:"14px 32px",
+                  borderRadius:10,
+                  border:"1.5px solid var(--border2)",
+                  background:"transparent",
+                  color:"var(--ink2)",
+                  fontSize:15,
+                  fontWeight:600,
+                  fontFamily:"var(--sans)",
+                  cursor:"none",
+                  transition:"all .3s cubic-bezier(.4,0,.2,1)",
+                }}
+                onMouseEnter={e=>{
+                  e.target.style.borderColor="var(--ink)";
+                  e.target.style.color="var(--ink)";
+                  e.target.style.background="var(--off)";
+                  e.target.style.transform="translateY(-2px)";
+                }}
+                onMouseLeave={e=>{
+                  e.target.style.borderColor="var(--border2)";
+                  e.target.style.color="var(--ink2)";
+                  e.target.style.background="transparent";
+                  e.target.style.transform="translateY(0)";
+                }}>
+                Take Career Assessment
+              </button>
+            </div>
+
+            {/* Trust indicators */}
+            <div style={{display:"flex",gap:24,flexWrap:"wrap",paddingTop:24,
+              borderTop:"1.5px solid var(--border)"}}>
+              {[
+                {icon:"✓",text:"ATS-aligned analysis"},
+                {icon:"✓",text:"Enterprise standards"},
+                {icon:"✓",text:"Role-based mapping"}
+              ].map(({icon,text})=>(
+                <div key={text} style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{
+                    width:18,height:18,borderRadius:"50%",
+                    background:"rgba(16,185,129,.12)",
+                    color:"var(--success)",
+                    fontSize:11,fontWeight:700,
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                  }}>{icon}</div>
+                  <span style={{fontSize:13,color:"var(--ink3)",fontWeight:500}}>{text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* RIGHT - Dashboard Preview */}
+          <div style={{animation:"slideLeft .8s cubic-bezier(.4,0,.2,1) .15s both"}}>
+            <DashboardPreview careerScore={careerScore} />
+          </div>
         </div>
+      </section>
 
-        <div className="hero-stats">
-          <AnimatedCounter end={1200} label="Careers Mapped" />
-          <AnimatedCounter end={90} label="ATS Success (%)" />
-          <AnimatedCounter end={300} label="Skills Tracked" />
+      {/* TECH STACK MARQUEE */}
+      <div ref={r1} className="reveal" style={{position:"relative",zIndex:1,
+        borderTop:"1.5px solid var(--border)",
+        borderBottom:"1.5px solid var(--border)",
+        background:"var(--w)",overflow:"hidden",padding:"20px 0"}}>
+        <TechMarquee />
+      </div>
+
+      {/* METRICS */}
+      <section ref={r2} className="reveal" style={{
+        padding:"100px clamp(20px,5vw,80px)",
+        position:"relative",zIndex:1,
+      }}>
+        <div style={{maxWidth:1200,margin:"0 auto",textAlign:"center"}}>
+          <div style={{marginBottom:70}}>
+            <div style={{
+              fontSize:12,
+              fontFamily:"var(--mono)",
+              fontWeight:700,
+              letterSpacing:".16em",
+              color:"var(--accent)",
+              marginBottom:18,
+              textTransform:"uppercase",
+            }}>Trusted by Thousands</div>
+            <h2 style={{
+              fontFamily:"var(--display)",
+              fontSize:"clamp(36px,4.5vw,58px)",
+              fontWeight:400,
+              lineHeight:1.12,
+              color:"var(--ink)",
+              fontStyle:"italic",
+            }}>
+              Career Intelligence<br/>
+              <span style={{color:"var(--ink3)",fontWeight:400}}>That Delivers Results</span>
+            </h2>
+          </div>
+
+          <div style={{
+            display:"grid",
+            gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",
+            gap:40,
+          }}>
+            <AnimatedCounter end={1200} label="Career Paths Analyzed" suffix="+" />
+            <AnimatedCounter end={90} label="ATS Alignment Rate" suffix="%" />
+            <AnimatedCounter end={300} label="Industry Skills Mapped" suffix="+" />
+          </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* CAREER READINESS */}
-      <section className="readiness">
-        <h2>Career Readiness Score</h2>
-        <div className="readiness-bar">
-          <motion.div
-            className="readiness-fill"
-            animate={{ width: `${careerScore}%` }}
-            transition={{ duration: 1 }}
-          />
+      <section ref={r3} className="reveal" style={{
+        padding:"60px clamp(20px,5vw,80px) 100px",
+        background:"var(--w)",
+        borderTop:"1.5px solid var(--border)",
+        position:"relative",zIndex:1,
+      }}>
+        <div style={{maxWidth:900,margin:"0 auto"}}>
+          <div style={{marginBottom:40,textAlign:"center"}}>
+            <div style={{
+              fontSize:12,
+              fontFamily:"var(--mono)",
+              fontWeight:700,
+              letterSpacing:".16em",
+              color:"var(--accent2)",
+              marginBottom:14,
+              textTransform:"uppercase",
+            }}>Your Progress</div>
+            <h2 style={{
+              fontFamily:"var(--display)",
+              fontSize:"clamp(32px,4vw,48px)",
+              fontWeight:400,
+              fontStyle:"italic",
+              color:"var(--ink)",
+              marginBottom:12,
+            }}>Career Readiness Score</h2>
+            <p style={{fontSize:15,color:"var(--ink3)",maxWidth:480,margin:"0 auto"}}>
+              Real-time assessment based on skills, resume quality, and industry alignment
+            </p>
+          </div>
+
+          {/* Progress bar */}
+          <div style={{
+            position:"relative",
+            height:12,
+            background:"var(--off)",
+            borderRadius:20,
+            overflow:"hidden",
+            border:"1.5px solid var(--border)",
+            marginBottom:20,
+          }}>
+            <div style={{
+              position:"absolute",
+              left:0,
+              top:0,
+              height:"100%",
+              width:`${careerScore}%`,
+              background:"linear-gradient(90deg, var(--accent), var(--accent2))",
+              borderRadius:20,
+              transition:"width 1s cubic-bezier(.4,0,.2,1)",
+              boxShadow:`0 0 20px rgba(79,70,229,.4)`,
+            }}/>
+          </div>
+
+          <div style={{
+            fontSize:42,
+            fontWeight:800,
+            fontFamily:"var(--sans)",
+            textAlign:"center",
+            background:"linear-gradient(135deg, var(--accent), var(--accent2))",
+            WebkitBackgroundClip:"text",
+            WebkitTextFillColor:"transparent",
+            backgroundClip:"text",
+            marginBottom:8,
+          }}>
+            {careerScore}%
+          </div>
+          <p style={{textAlign:"center",fontSize:14,color:"var(--ink3)"}}>
+            Aligned with industry expectations
+          </p>
         </div>
-        <p>{careerScore}% aligned with industry expectations</p>
       </section>
 
-      {/* SKILL GAP – MULTI DOMAIN */}
-      <section className="skills-sim">
-        <h2>Skill Gap Simulator</h2>
+      {/* SKILL GAP SIMULATOR */}
+      <section ref={r4} className="reveal" style={{
+        padding:"100px clamp(20px,5vw,80px)",
+        position:"relative",zIndex:1,
+      }}>
+        <div style={{maxWidth:1200,margin:"0 auto"}}>
+          <div style={{marginBottom:50,textAlign:"center"}}>
+            <div style={{
+              fontSize:12,
+              fontFamily:"var(--mono)",
+              fontWeight:700,
+              letterSpacing:".16em",
+              color:"var(--accent3)",
+              marginBottom:14,
+              textTransform:"uppercase",
+            }}>Interactive Tool</div>
+            <h2 style={{
+              fontFamily:"var(--display)",
+              fontSize:"clamp(32px,4vw,48px)",
+              fontWeight:400,
+              fontStyle:"italic",
+              color:"var(--ink)",
+              marginBottom:16,
+            }}>Skill Gap Simulator</h2>
+            <p style={{fontSize:15,color:"var(--ink3)",maxWidth:600,margin:"0 auto"}}>
+              Select your target domain and click on skills you already have.
+              We'll show you exactly what's missing for your dream role.
+            </p>
+          </div>
 
-        <select
-          value={selectedDomain}
-          onChange={(e) => {
-            setSelectedDomain(e.target.value);
-            setSelectedSkills([]);
+          <div style={{
+            background:"var(--w)",
+            border:"1.5px solid var(--border)",
+            borderRadius:16,
+            padding:"40px",
+            boxShadow:"0 8px 32px rgba(15,20,25,.06)",
+          }}>
+            {/* Domain selector */}
+            <div style={{marginBottom:32}}>
+              <label style={{
+                display:"block",
+                fontSize:13,
+                fontWeight:600,
+                color:"var(--ink3)",
+                marginBottom:12,
+                fontFamily:"var(--mono)",
+                letterSpacing:".08em",
+                textTransform:"uppercase",
+              }}>Select Career Domain</label>
+              <select
+                value={selectedDomain}
+                onChange={(e) => {
+                  setSelectedDomain(e.target.value);
+                  setSelectedSkills([]);
+                }}
+                style={{
+                  width:"100%",
+                  padding:"16px 20px",
+                  borderRadius:10,
+                  border:"1.5px solid var(--border)",
+                  background:"var(--off)",
+                  color:"var(--ink)",
+                  fontSize:16,
+                  fontWeight:600,
+                  fontFamily:"var(--sans)",
+                  cursor:"pointer",
+                  outline:"none",
+                  transition:"all .3s",
+                }}
+                onFocus={e=>{
+                  e.target.style.borderColor="var(--accent)";
+                  e.target.style.boxShadow="0 0 0 3px rgba(79,70,229,.1)";
+                }}
+                onBlur={e=>{
+                  e.target.style.borderColor="var(--border)";
+                  e.target.style.boxShadow="none";
+                }}>
+                {Object.keys(DOMAINS).map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Skills count info */}
+            <div style={{
+              display:"flex",
+              justifyContent:"space-between",
+              alignItems:"center",
+              marginBottom:24,
+              padding:"16px 20px",
+              background:"var(--off)",
+              borderRadius:10,
+              border:"1.5px solid var(--border)",
+            }}>
+              <div>
+                <div style={{fontSize:12,color:"var(--ink3)",marginBottom:4,fontFamily:"var(--mono)"}}>
+                  Available Skills
+                </div>
+                <div style={{fontSize:20,fontWeight:700,color:"var(--ink)"}}>
+                  {DOMAINS[selectedDomain].length} skills
+                </div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:12,color:"var(--ink3)",marginBottom:4,fontFamily:"var(--mono)"}}>
+                  Your Skills
+                </div>
+                <div style={{fontSize:20,fontWeight:700,color:"var(--accent)"}}>
+                  {selectedSkills.length} selected
+                </div>
+              </div>
+            </div>
+
+            {/* Skills grid */}
+            <div style={{
+              display:"grid",
+              gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",
+              gap:12,
+              marginBottom:28,
+            }}>
+              {DOMAINS[selectedDomain].map((skill) => {
+                const isSelected = selectedSkills.includes(skill.name);
+                return (
+                  <button
+                    key={skill.name}
+                    data-mag
+                    onClick={() => toggleSkill(skill.name)}
+                    style={{
+                      padding:"16px 18px",
+                      borderRadius:10,
+                      border:`2px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
+                      background: isSelected 
+                        ? "linear-gradient(135deg, rgba(79,70,229,.1), rgba(124,58,237,.08))"
+                        : "var(--w)",
+                      color: isSelected ? "var(--accent)" : "var(--ink2)",
+                      fontSize:14,
+                      fontWeight:600,
+                      fontFamily:"var(--sans)",
+                      cursor:"none",
+                      transition:"all .3s cubic-bezier(.4,0,.2,1)",
+                      display:"flex",
+                      alignItems:"center",
+                      gap:12,
+                      position:"relative",
+                      overflow:"hidden",
+                    }}
+                    onMouseEnter={e=>{
+                      if(!isSelected){
+                        e.target.style.borderColor="var(--accent)";
+                        e.target.style.background="rgba(79,70,229,.04)";
+                      }
+                      e.target.style.transform="translateY(-3px) scale(1.02)";
+                      e.target.style.boxShadow="0 8px 20px rgba(79,70,229,.15)";
+                    }}
+                    onMouseLeave={e=>{
+                      if(!isSelected){
+                        e.target.style.borderColor="var(--border)";
+                        e.target.style.background="var(--w)";
+                      }
+                      e.target.style.transform="translateY(0) scale(1)";
+                      e.target.style.boxShadow="none";
+                    }}>
+                    {isSelected && (
+                      <div style={{
+                        position:"absolute",
+                        top:4,
+                        right:4,
+                        width:20,
+                        height:20,
+                        borderRadius:"50%",
+                        background:"var(--accent)",
+                        display:"flex",
+                        alignItems:"center",
+                        justifyContent:"center",
+                        fontSize:12,
+                        color:"var(--w)",
+                        animation:"scaleIn .3s ease",
+                      }}>✓</div>
+                    )}
+                    <i className={skill.icon} style={{
+                      fontSize:24,
+                      opacity: isSelected ? 1 : 0.6,
+                      transition:"opacity .3s",
+                    }}/>
+                    <span style={{flex:1,textAlign:"left"}}>{skill.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Coverage visualization */}
+            <div style={{
+              padding:"20px 24px",
+              borderRadius:12,
+              background:"var(--off)",
+              border:"1.5px solid var(--border)",
+            }}>
+              <div style={{
+                display:"flex",
+                justifyContent:"space-between",
+                alignItems:"center",
+                marginBottom:12,
+              }}>
+                <div>
+                  <span style={{fontSize:14,fontWeight:700,color:"var(--ink)"}}>
+                    Skill Coverage Progress
+                  </span>
+                  <div style={{fontSize:12,color:"var(--ink3)",marginTop:4}}>
+                    {selectedSkills.length === 0 
+                      ? "Start by selecting skills you already know" 
+                      : selectedSkills.length === DOMAINS[selectedDomain].length
+                      ? "🎉 You've mastered all skills in this domain!"
+                      : `${DOMAINS[selectedDomain].length - selectedSkills.length} skills remaining to complete this domain`}
+                  </div>
+                </div>
+                <div style={{
+                  fontSize:28,
+                  fontWeight:800,
+                  color:"var(--accent)",
+                  fontFamily:"var(--sans)",
+                }}>
+                  {Math.round((selectedSkills.length / DOMAINS[selectedDomain].length) * 100)}%
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div style={{
+                height:10,
+                background:"var(--border)",
+                borderRadius:20,
+                overflow:"hidden",
+                position:"relative",
+              }}>
+                <div style={{
+                  height:"100%",
+                  width:`${(selectedSkills.length / DOMAINS[selectedDomain].length) * 100}%`,
+                  background:"linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3))",
+                  borderRadius:20,
+                  transition:"width .5s cubic-bezier(.4,0,.2,1)",
+                  position:"relative",
+                  boxShadow:"0 0 20px rgba(79,70,229,.4)",
+                }}>
+                  {selectedSkills.length > 0 && (
+                    <div style={{
+                      position:"absolute",
+                      right:-8,
+                      top:"50%",
+                      transform:"translateY(-50%)",
+                      width:16,
+                      height:16,
+                      borderRadius:"50%",
+                      background:"var(--w)",
+                      border:"3px solid var(--accent)",
+                      animation:"pulse 2s ease-in-out infinite",
+                    }}/>
+                  )}
+                </div>
+              </div>
+
+              {/* Skill level indicator */}
+              <div style={{
+                display:"flex",
+                justifyContent:"space-between",
+                marginTop:16,
+                paddingTop:16,
+                borderTop:"1px solid var(--border)",
+              }}>
+                {[
+                  {level:"Beginner",min:0,max:25,color:"#ef4444"},
+                  {level:"Intermediate",min:26,max:50,color:"#f59e0b"},
+                  {level:"Advanced",min:51,max:75,color:"#3b82f6"},
+                  {level:"Expert",min:76,max:100,color:"#10b981"},
+                ].map(({level,min,max,color})=>{
+                  const pct = Math.round((selectedSkills.length / DOMAINS[selectedDomain].length) * 100);
+                  const isActive = pct >= min && pct <= max;
+                  return (
+                    <div key={level} style={{
+                      display:"flex",
+                      flexDirection:"column",
+                      alignItems:"center",
+                      gap:6,
+                      opacity: isActive ? 1 : 0.4,
+                      transition:"opacity .3s",
+                    }}>
+                      <div style={{
+                        width:12,
+                        height:12,
+                        borderRadius:"50%",
+                        background:color,
+                        border: isActive ? `3px solid ${color}40` : "none",
+                        boxShadow: isActive ? `0 0 12px ${color}60` : "none",
+                        animation: isActive ? "pulse 2s ease-in-out infinite" : "none",
+                      }}/>
+                      <span style={{
+                        fontSize:11,
+                        fontWeight: isActive ? 700 : 500,
+                        color: isActive ? "var(--ink)" : "var(--ink3)",
+                        fontFamily:"var(--mono)",
+                      }}>{level}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Missing skills alert */}
+            {selectedSkills.length > 0 && selectedSkills.length < DOMAINS[selectedDomain].length && (
+              <div style={{
+                marginTop:20,
+                padding:"20px",
+                background:"rgba(239,68,68,.05)",
+                border:"1.5px solid rgba(239,68,68,.2)",
+                borderRadius:10,
+                animation:"slideUp .4s ease",
+              }}>
+                <div style={{fontSize:14,fontWeight:600,color:"#dc2626",marginBottom:8}}>
+                  📋 Missing Skills for {selectedDomain}
+                </div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                  {DOMAINS[selectedDomain]
+                    .filter(s => !selectedSkills.includes(s.name))
+                    .slice(0,8)
+                    .map(skill => (
+                      <div key={skill.name} style={{
+                        padding:"6px 12px",
+                        background:"var(--w)",
+                        border:"1px solid rgba(239,68,68,.3)",
+                        borderRadius:6,
+                        fontSize:12,
+                        color:"#dc2626",
+                        display:"flex",
+                        alignItems:"center",
+                        gap:6,
+                      }}>
+                        <i className={skill.icon} style={{fontSize:14}}/>
+                        {skill.name}
+                      </div>
+                    ))}
+                  {DOMAINS[selectedDomain].length - selectedSkills.length > 8 && (
+                    <div style={{
+                      padding:"6px 12px",
+                      fontSize:12,
+                      color:"#dc2626",
+                      fontWeight:600,
+                    }}>
+                      +{DOMAINS[selectedDomain].length - selectedSkills.length - 8} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Expert badge */}
+            {selectedSkills.length === DOMAINS[selectedDomain].length && (
+              <div style={{
+                marginTop:20,
+                padding:"24px",
+                background:"linear-gradient(135deg, rgba(16,185,129,.1), rgba(14,165,233,.08))",
+                border:"2px solid var(--success)",
+                borderRadius:12,
+                textAlign:"center",
+                animation:"scaleIn .5s cubic-bezier(.4,0,.2,1)",
+              }}>
+                <div style={{fontSize:32,marginBottom:8}}>🏆</div>
+                <div style={{fontSize:18,fontWeight:700,color:"var(--success)",marginBottom:4}}>
+                  Domain Expert!
+                </div>
+                <div style={{fontSize:14,color:"var(--ink3)"}}>
+                  You've mastered all skills in {selectedDomain}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* RESUME ANALYTICS */}
+      <section ref={r5} className="reveal" style={{
+        padding:"100px clamp(20px,5vw,80px)",
+        background:"var(--w)",
+        borderTop:"1.5px solid var(--border)",
+        position:"relative",zIndex:1,
+      }}>
+        <div style={{maxWidth:1100,margin:"0 auto"}}>
+          <div style={{marginBottom:50,textAlign:"center"}}>
+            <div style={{
+              fontSize:12,
+              fontFamily:"var(--mono)",
+              fontWeight:700,
+              letterSpacing:".16em",
+              color:"var(--success)",
+              marginBottom:14,
+              textTransform:"uppercase",
+            }}>AI-Powered Analysis</div>
+            <h2 style={{
+              fontFamily:"var(--display)",
+              fontSize:"clamp(32px,4vw,48px)",
+              fontWeight:400,
+              fontStyle:"italic",
+              color:"var(--ink)",
+            }}>Resume Analytics</h2>
+          </div>
+
+          <div style={{
+            background:"var(--paper)",
+            border:"2px dashed var(--border2)",
+            borderRadius:16,
+            padding:"60px 40px",
+            textAlign:"center",
+            cursor:"pointer",
+            transition:"all .3s cubic-bezier(.4,0,.2,1)",
           }}
-        >
-          {Object.keys(domains).map((d) => (
-            <option key={d}>{d}</option>
-          ))}
-        </select>
+            data-clickable
+            onClick={() => fileRef.current?.click()}
+            onMouseEnter={e=>{
+              e.currentTarget.style.borderColor="var(--accent)";
+              e.currentTarget.style.background="rgba(79,70,229,.03)";
+            }}
+            onMouseLeave={e=>{
+              e.currentTarget.style.borderColor="var(--border2)";
+              e.currentTarget.style.background="var(--paper)";
+            }}>
+            <div style={{
+              width:60,
+              height:60,
+              borderRadius:"50%",
+              background:"linear-gradient(135deg, rgba(79,70,229,.1), rgba(124,58,237,.1))",
+              display:"flex",
+              alignItems:"center",
+              justifyContent:"center",
+              margin:"0 auto 20px",
+              fontSize:28,
+            }}>📄</div>
+            <h3 style={{
+              fontSize:20,
+              fontWeight:600,
+              color:"var(--ink)",
+              marginBottom:8,
+            }}>
+              {resume ? resume.name : "Upload Your Resume"}
+            </h3>
+            <p style={{
+              fontSize:14,
+              color:"var(--ink3)",
+            }}>
+              Drop your PDF or DOCX file here for instant ATS analysis
+            </p>
+          </div>
 
-        <div className="skill-list">
-          {domains[selectedDomain].map((skill) => (
-            <motion.button
-              key={skill}
-              whileHover={{ scale: 1.1 }}
-              className={selectedSkills.includes(skill) ? "active" : ""}
-              onClick={() => toggleSkill(skill)}
-            >
-              {skill}
-            </motion.button>
-          ))}
-        </div>
+          <input
+            ref={fileRef}
+            type="file"
+            hidden
+            accept=".pdf,.docx"
+            onChange={(e) => setResume(e.target.files?.[0] || null)}
+          />
 
-        <p>
-          Skill Coverage: {selectedSkills.length}/{domains[selectedDomain].length}
-        </p>
-      </section>
-
-      {/* RESUME */}
-      <section className="resume-section">
-        <h2>Resume Insights</h2>
-        <motion.div
-          className="resume-box"
-          whileHover={{ scale: 1.03 }}
-          onClick={() => fileRef.current.click()}
-        >
-          {resume ? resume.name : "Upload Resume"}
-        </motion.div>
-
-        <input
-          ref={fileRef}
-          type="file"
-          hidden
-          onChange={(e) => setResume(e.target.files[0])}
-        />
-
-        {resume && (
-          <ul className="resume-insights">
-            <li>✔ ATS Score: 82%</li>
-            <li>✔ Domain Match: {selectedDomain}</li>
-            <li>✔ Missing Skills: {domains[selectedDomain]
-              .filter((s) => !selectedSkills.includes(s))
-              .slice(0, 2)
-              .join(", ")}</li>
-          </ul>
-        )}
-      </section>
-
-      {/* ROADMAP – REALTIME */}
-      <section className="roadmap">
-        <h2>Industry Career Roadmap</h2>
-        <div className="timeline">
-          {["Foundation", "Skill Mastery", "Projects", "Internships", "MNC Role"].map(
-            (step, i) => (
-              <motion.div
-                key={step}
-                className="timeline-step"
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 4 + i, repeat: Infinity }}
-              >
-                {step}
-              </motion.div>
-            )
+          {resume && (
+            <div style={{
+              marginTop:32,
+              display:"grid",
+              gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",
+              gap:16,
+            }}>
+              {[
+                {label:"ATS Score",value:"82%",color:"var(--success)"},
+                {label:"Domain Match",value:selectedDomain.split(" ")[0],color:"var(--accent)"},
+                {label:"Skill Alignment",value:`${Math.round((selectedSkills.length/DOMAINS[selectedDomain].length)*100)}%`,color:"var(--accent2)"},
+              ].map(({label,value,color})=>(
+                <div key={label} style={{
+                  padding:"20px",
+                  background:"var(--w)",
+                  border:"1.5px solid var(--border)",
+                  borderRadius:12,
+                  textAlign:"center",
+                }}>
+                  <div style={{
+                    fontSize:13,
+                    color:"var(--ink3)",
+                    fontWeight:600,
+                    marginBottom:8,
+                  }}>{label}</div>
+                  <div style={{
+                    fontSize:28,
+                    fontWeight:700,
+                    color:color,
+                  }}>{value}</div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </section>
 
-      {/* ACHIEVEMENTS */}
-      <section className="badges">
-        <h2>Professional Achievements</h2>
-        <div className="badge-list">
-          {resume && <span>📄 Resume Verified</span>}
-          {selectedSkills.length >= 3 && <span>🧠 Skill Explorer</span>}
-          {selectedSkills.length >= 5 && <span>🏆 Domain Specialist</span>}
-          {careerScore >= 80 && <span>🚀 MNC-Ready Talent</span>}
+      {/* CAREER ROADMAP */}
+      <section ref={r6} className="reveal" style={{
+        padding:"100px clamp(20px,5vw,80px)",
+        position:"relative",zIndex:1,
+      }}>
+        <div style={{maxWidth:1200,margin:"0 auto"}}>
+          <div style={{marginBottom:60,textAlign:"center"}}>
+            <div style={{
+              fontSize:12,
+              fontFamily:"var(--mono)",
+              fontWeight:700,
+              letterSpacing:".16em",
+              color:"var(--warning)",
+              marginBottom:14,
+              textTransform:"uppercase",
+            }}>Your Journey</div>
+            <h2 style={{
+              fontFamily:"var(--display)",
+              fontSize:"clamp(32px,4vw,48px)",
+              fontWeight:400,
+              fontStyle:"italic",
+              color:"var(--ink)",
+            }}>Industry Career Roadmap</h2>
+          </div>
+
+          <div style={{
+            position:"relative",
+            padding:"40px 0",
+          }}>
+            {/* Connection line */}
+            <div style={{
+              position:"absolute",
+              top:"50%",
+              left:"10%",
+              right:"10%",
+              height:3,
+              background:"linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3))",
+              borderRadius:10,
+              transform:"translateY(-50%)",
+            }}/>
+
+            <div style={{
+              display:"flex",
+              justifyContent:"space-between",
+              position:"relative",
+            }}>
+              {ROADMAP_STEPS.map((step, i) => (
+                <div key={step} style={{
+                  flex:1,
+                  display:"flex",
+                  flexDirection:"column",
+                  alignItems:"center",
+                  animation:`fadeUp .6s cubic-bezier(.4,0,.2,1) ${i * 0.1}s both`,
+                }}>
+                  <div style={{
+                    width:50,
+                    height:50,
+                    borderRadius:"50%",
+                    background:"var(--w)",
+                    border:`3px solid ${i === 0 ? "var(--accent)" : i === ROADMAP_STEPS.length - 1 ? "var(--accent3)" : "var(--accent2)"}`,
+                    display:"flex",
+                    alignItems:"center",
+                    justifyContent:"center",
+                    fontWeight:700,
+                    color:"var(--accent)",
+                    marginBottom:16,
+                    boxShadow:"0 4px 16px rgba(79,70,229,.2)",
+                    fontSize:18,
+                  }}>
+                    {i + 1}
+                  </div>
+                  <div style={{
+                    fontSize:14,
+                    fontWeight:600,
+                    color:"var(--ink)",
+                    textAlign:"center",
+                    maxWidth:120,
+                  }}>
+                    {step}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* TRUST */}
-      <section className="trust">
-        <p>✔ Role-Based Skill Mapping</p>
-        <p>✔ Education-Independent Career Paths</p>
-        <p>✔ Enterprise Hiring Standards</p>
+      {/* CAREER FEATURES - NEW */}
+      <section style={{
+        padding:"100px clamp(20px,5vw,80px)",
+        background:"var(--w)",
+        borderTop:"1.5px solid var(--border)",
+        position:"relative",
+        zIndex:1,
+      }}>
+        <div style={{maxWidth:1200,margin:"0 auto"}}>
+          <div style={{marginBottom:60,textAlign:"center"}}>
+            <div style={{
+              fontSize:12,
+              fontFamily:"var(--mono)",
+              fontWeight:700,
+              letterSpacing:".16em",
+              color:"var(--accent)",
+              marginBottom:14,
+              textTransform:"uppercase",
+            }}>Everything You Need</div>
+            <h2 style={{
+              fontFamily:"var(--display)",
+              fontSize:"clamp(36px,4.5vw,58px)",
+              fontWeight:400,
+              fontStyle:"italic",
+              color:"var(--ink)",
+              lineHeight:1.12,
+              marginBottom:16,
+            }}>Comprehensive Career<br/>Intelligence Platform</h2>
+            <p style={{fontSize:16,color:"var(--ink3)",maxWidth:600,margin:"0 auto"}}>
+              From career discovery to job placement, we provide end-to-end guidance
+              powered by AI and real-time market data
+            </p>
+          </div>
+
+          <div style={{
+            display:"grid",
+            gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))",
+            gap:24,
+          }}>
+            {CAREER_FEATURES.map((feature, i) => (
+              <div key={feature.title} data-mag style={{
+                background:"var(--paper)",
+                border:"1.5px solid var(--border)",
+                borderRadius:16,
+                padding:"32px",
+                cursor:"none",
+                transition:"all .4s cubic-bezier(.4,0,.2,1)",
+                animation:`scaleIn .6s cubic-bezier(.4,0,.2,1) ${i * 0.08}s both`,
+              }}
+                onMouseEnter={e=>{
+                  e.currentTarget.style.transform="translateY(-8px)";
+                  e.currentTarget.style.boxShadow=`0 20px 50px ${feature.color}20`;
+                  e.currentTarget.style.borderColor=`${feature.color}40`;
+                }}
+                onMouseLeave={e=>{
+                  e.currentTarget.style.transform="translateY(0)";
+                  e.currentTarget.style.boxShadow="none";
+                  e.currentTarget.style.borderColor="var(--border)";
+                }}>
+                <div style={{
+                  width:60,
+                  height:60,
+                  borderRadius:14,
+                  background:`linear-gradient(135deg, ${feature.color}10, ${feature.color}08)`,
+                  border:`2px solid ${feature.color}20`,
+                  display:"flex",
+                  alignItems:"center",
+                  justifyContent:"center",
+                  fontSize:28,
+                  marginBottom:20,
+                  animation:"floatSlow 4s ease-in-out infinite",
+                }}>
+                  {feature.icon}
+                </div>
+                <h3 style={{
+                  fontSize:20,
+                  fontWeight:700,
+                  color:"var(--ink)",
+                  marginBottom:12,
+                  fontFamily:"var(--sans)",
+                }}>{feature.title}</h3>
+                <p style={{
+                  fontSize:14,
+                  color:"var(--ink3)",
+                  lineHeight:1.7,
+                }}>{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
-      {/* CAREERBOT */}
-      <button className="careerbot-fab" onClick={() => setBotOpen(true)}>
-        🤖
-      </button>
+      {/* SUCCESS STORIES - NEW */}
+      <section style={{
+        padding:"100px clamp(20px,5vw,80px)",
+        position:"relative",
+        zIndex:1,
+        overflow:"hidden",
+      }}>
+        <div style={{position:"absolute",top:"10%",right:"-5%",width:"40vw",height:"40vw",
+          borderRadius:"50%",background:"radial-gradient(circle,rgba(14,165,233,.06) 0%,transparent 70%)",
+          filter:"blur(60px)",pointerEvents:"none",animation:"float 14s ease-in-out infinite"}}/>
 
-      <AnimatePresence>
-        {botOpen && (
-          <motion.div
-            className="bot-modal"
-            initial={{ scale: 0.85, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <h3>CareerBot</h3>
-            <p>Ask career questions across all domains.</p>
-            <button onClick={() => navigate("/chat")}>Open Assistant</button>
-            <button onClick={() => setBotOpen(false)}>Close</button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <div style={{maxWidth:1200,margin:"0 auto"}}>
+          <div style={{marginBottom:60,textAlign:"center"}}>
+            <div style={{
+              fontSize:12,
+              fontFamily:"var(--mono)",
+              fontWeight:700,
+              letterSpacing:".16em",
+              color:"var(--success)",
+              marginBottom:14,
+              textTransform:"uppercase",
+            }}>Real Results</div>
+            <h2 style={{
+              fontFamily:"var(--display)",
+              fontSize:"clamp(36px,4.5vw,58px)",
+              fontWeight:400,
+              fontStyle:"italic",
+              color:"var(--ink)",
+            }}>Success Stories</h2>
+          </div>
 
-      {/* LOGIN PROMPT POPUP */}
-      <AnimatePresence>
-        {showLoginPrompt && (
-          <motion.div
-            className="login-prompt-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="login-prompt-card"
-              initial={{ scale: 0.8, y: 50 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.8, y: 50 }}
-              transition={{ type: "spring", damping: 20 }}
-            >
-              <h3>🔐 Login Required</h3>
-              <p>To access personalized predictions and resume analysis, please log in first.</p>
-              <p>Redirecting you to login page...</p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <div style={{
+            display:"grid",
+            gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",
+            gap:24,
+          }}>
+            {SUCCESS_STORIES.map((story, i) => (
+              <div key={story.name} data-mag style={{
+                background:"var(--w)",
+                border:"1.5px solid var(--border)",
+                borderRadius:16,
+                padding:"32px",
+                cursor:"none",
+                transition:"all .4s cubic-bezier(.4,0,.2,1)",
+                animation:`slideUp .6s cubic-bezier(.4,0,.2,1) ${i * 0.1}s both`,
+              }}
+                onMouseEnter={e=>{
+                  e.currentTarget.style.transform="translateY(-8px) scale(1.02)";
+                  e.currentTarget.style.boxShadow="0 20px 50px rgba(79,70,229,.15)";
+                }}
+                onMouseLeave={e=>{
+                  e.currentTarget.style.transform="translateY(0) scale(1)";
+                  e.currentTarget.style.boxShadow="none";
+                }}>
+                <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20}}>
+                  <div style={{
+                    width:56,
+                    height:56,
+                    borderRadius:"50%",
+                    background:"linear-gradient(135deg, var(--accent), var(--accent2))",
+                    display:"flex",
+                    alignItems:"center",
+                    justifyContent:"center",
+                    fontSize:20,
+                    fontWeight:700,
+                    color:"var(--w)",
+                  }}>{story.image}</div>
+                  <div>
+                    <h4 style={{fontSize:17,fontWeight:700,color:"var(--ink)",marginBottom:4}}>
+                      {story.name}
+                    </h4>
+                    <p style={{fontSize:13,color:"var(--ink3)"}}>{story.role}</p>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:4,marginBottom:16}}>
+                  {[...Array(story.rating)].map((_, i) => (
+                    <span key={i} style={{color:"var(--warning)",fontSize:16}}>⭐</span>
+                  ))}
+                </div>
+                <p style={{fontSize:14,color:"var(--ink3)",lineHeight:1.7,fontStyle:"italic"}}>
+                  "{story.story}"
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* INDUSTRIES - NEW */}
+      <section style={{
+        padding:"100px clamp(20px,5vw,80px)",
+        background:"var(--w)",
+        borderTop:"1.5px solid var(--border)",
+        position:"relative",
+        zIndex:1,
+      }}>
+        <div style={{maxWidth:1200,margin:"0 auto"}}>
+          <div style={{marginBottom:60,textAlign:"center"}}>
+            <div style={{
+              fontSize:12,
+              fontFamily:"var(--mono)",
+              fontWeight:700,
+              letterSpacing:".16em",
+              color:"var(--accent3)",
+              marginBottom:14,
+              textTransform:"uppercase",
+            }}>Hot Industries</div>
+            <h2 style={{
+              fontFamily:"var(--display)",
+              fontSize:"clamp(36px,4.5vw,58px)",
+              fontWeight:400,
+              fontStyle:"italic",
+              color:"var(--ink)",
+            }}>Trending Career Paths</h2>
+          </div>
+
+          <div style={{
+            display:"grid",
+            gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",
+            gap:20,
+          }}>
+            {INDUSTRIES.map((industry, i) => (
+              <div key={industry.name} data-mag style={{
+                background:"var(--paper)",
+                border:"1.5px solid var(--border)",
+                borderRadius:14,
+                padding:"28px",
+                cursor:"none",
+                transition:"all .3s cubic-bezier(.4,0,.2,1)",
+                animation:`rotateIn .5s cubic-bezier(.4,0,.2,1) ${i * 0.06}s both`,
+              }}
+                onMouseEnter={e=>{
+                  e.currentTarget.style.transform="translateY(-6px)";
+                  e.currentTarget.style.borderColor="var(--accent)";
+                  e.currentTarget.style.boxShadow="0 12px 32px rgba(79,70,229,.12)";
+                }}
+                onMouseLeave={e=>{
+                  e.currentTarget.style.transform="translateY(0)";
+                  e.currentTarget.style.borderColor="var(--border)";
+                  e.currentTarget.style.boxShadow="none";
+                }}>
+                <div style={{
+                  display:"flex",
+                  justifyContent:"space-between",
+                  alignItems:"flex-start",
+                  marginBottom:16,
+                }}>
+                  <i className={industry.icon} style={{fontSize:32,opacity:.8}}/>
+                  <div style={{
+                    padding:"4px 10px",
+                    borderRadius:8,
+                    background:"rgba(16,185,129,.1)",
+                    border:"1px solid rgba(16,185,129,.2)",
+                    fontSize:11,
+                    fontWeight:700,
+                    color:"var(--success)",
+                  }}>{industry.growth}</div>
+                </div>
+                <h4 style={{fontSize:18,fontWeight:700,color:"var(--ink)",marginBottom:8}}>
+                  {industry.name}
+                </h4>
+                <p style={{fontSize:13,color:"var(--ink3)"}}>
+                  {industry.jobs} open positions
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* COMPARISON TABLE - NEW */}
+      <section style={{
+        padding:"100px clamp(20px,5vw,80px)",
+        position:"relative",
+        zIndex:1,
+      }}>
+        <div style={{maxWidth:1000,margin:"0 auto"}}>
+          <div style={{marginBottom:60,textAlign:"center"}}>
+            <div style={{
+              fontSize:12,
+              fontFamily:"var(--mono)",
+              fontWeight:700,
+              letterSpacing:".16em",
+              color:"var(--accent2)",
+              marginBottom:14,
+              textTransform:"uppercase",
+            }}>Why Choose Us</div>
+            <h2 style={{
+              fontFamily:"var(--display)",
+              fontSize:"clamp(36px,4.5vw,58px)",
+              fontWeight:400,
+              fontStyle:"italic",
+              color:"var(--ink)",
+            }}>PathNex vs Traditional<br/>Career Guidance</h2>
+          </div>
+
+          <div style={{
+            background:"var(--w)",
+            border:"1.5px solid var(--border)",
+            borderRadius:16,
+            overflow:"hidden",
+            boxShadow:"0 12px 40px rgba(15,20,25,.08)",
+          }}>
+            <div style={{
+              display:"grid",
+              gridTemplateColumns:"2fr 1fr 1fr",
+              background:"var(--off)",
+              padding:"20px 24px",
+              borderBottom:"1.5px solid var(--border)",
+            }}>
+              <div style={{fontSize:13,fontWeight:700,color:"var(--ink3)",textTransform:"uppercase",letterSpacing:".08em"}}>
+                Feature
+              </div>
+              <div style={{fontSize:13,fontWeight:700,color:"var(--ink3)",textTransform:"uppercase",letterSpacing:".08em",textAlign:"center"}}>
+                Traditional
+              </div>
+              <div style={{fontSize:13,fontWeight:700,color:"var(--accent)",textTransform:"uppercase",letterSpacing:".08em",textAlign:"center"}}>
+                PathNex
+              </div>
+            </div>
+            {COMPARISON.map((row, i) => (
+              <div key={row.feature} style={{
+                display:"grid",
+                gridTemplateColumns:"2fr 1fr 1fr",
+                padding:"20px 24px",
+                borderBottom: i < COMPARISON.length - 1 ? "1px solid var(--border)" : "none",
+                transition:"background .2s",
+              }}
+                onMouseEnter={e=>e.currentTarget.style.background="var(--paper)"}
+                onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                <div style={{fontSize:15,fontWeight:600,color:"var(--ink)"}}>
+                  {row.feature}
+                </div>
+                <div style={{fontSize:14,color:"var(--ink3)",textAlign:"center"}}>
+                  {row.traditional}
+                </div>
+                <div style={{fontSize:14,color:"var(--accent)",textAlign:"center",fontWeight:600}}>
+                  {row.pathnex}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA SECTION */}
+      <section ref={r7} className="reveal" style={{
+        padding:"100px clamp(20px,5vw,80px)",
+        background:"var(--ink)",
+        position:"relative",
+        overflow:"hidden",
+      }}>
+        {/* Grid background */}
+        <div style={{position:"absolute",inset:0,
+          backgroundImage:"linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px)",
+          backgroundSize:"60px 60px"}}/>
+
+        <div style={{position:"absolute",top:"-20%",right:"-10%",width:"60%",height:"140%",
+          background:"radial-gradient(circle,rgba(79,70,229,.15) 0%,transparent 65%)",
+          pointerEvents:"none"}}/>
+
+        <div style={{
+          position:"relative",
+          maxWidth:800,
+          margin:"0 auto",
+          textAlign:"center",
+        }}>
+          <div style={{
+            fontSize:12,
+            fontFamily:"var(--mono)",
+            fontWeight:700,
+            letterSpacing:".16em",
+            color:"rgba(255,255,255,.4)",
+            marginBottom:20,
+            textTransform:"uppercase",
+            display:"flex",
+            alignItems:"center",
+            justifyContent:"center",
+            gap:12,
+          }}>
+            <div style={{width:24,height:1,background:"rgba(255,255,255,.3)"}}/>
+            Ready to Start
+            <div style={{width:24,height:1,background:"rgba(255,255,255,.3)"}}/>
+          </div>
+
+          <h2 style={{
+            fontFamily:"var(--display)",
+            fontSize:"clamp(36px,5vw,64px)",
+            fontWeight:400,
+            fontStyle:"italic",
+            color:"var(--w)",
+            marginBottom:20,
+            lineHeight:1.12,
+          }}>
+            Start Building Your<br/>
+            <span style={{
+              background:"linear-gradient(120deg, #a78bfa, #c4b5fd, #a78bfa)",
+              backgroundSize:"200% auto",
+              WebkitBackgroundClip:"text",
+              WebkitTextFillColor:"transparent",
+              backgroundClip:"text",
+              animation:"gradShift 4s ease infinite",
+            }}>Career Advantage</span> Today
+          </h2>
+
+          <p style={{
+            fontSize:17,
+            color:"rgba(255,255,255,.6)",
+            maxWidth:560,
+            margin:"0 auto 40px",
+            lineHeight:1.7,
+          }}>
+            Join thousands of professionals using AI-powered career intelligence
+            to navigate their path to success
+          </p>
+
+          <button data-mag data-mag-label="START"
+            onClick={handleGetStarted}
+            style={{
+              padding:"16px 40px",
+              borderRadius:10,
+              border:"none",
+              background:"var(--w)",
+              color:"var(--ink)",
+              fontSize:16,
+              fontWeight:700,
+              fontFamily:"var(--sans)",
+              cursor:"none",
+              boxShadow:"0 8px 24px rgba(255,255,255,.18)",
+              transition:"all .3s cubic-bezier(.4,0,.2,1)",
+            }}
+            onMouseEnter={e=>{
+              e.target.style.transform="translateY(-3px)";
+              e.target.style.boxShadow="0 12px 32px rgba(255,255,255,.28)";
+            }}
+            onMouseLeave={e=>{
+              e.target.style.transform="translateY(0)";
+              e.target.style.boxShadow="0 8px 24px rgba(255,255,255,.18)";
+            }}>
+            Get Personalized Career Plan
+          </button>
+        </div>
+      </section>
 
       {/* FOOTER */}
-      <footer className="footer enterprise-footer">
-        <div className="footer-grid">
-          <div>
-            <h4>PathNex</h4>
-            <p>Universal career intelligence platform.</p>
-          </div>
-          <div>
-            <h5>Domains</h5>
-            <p>Engineering</p>
-            <p>Data & AI</p>
-            <p>Business</p>
-          </div>
-          <div>
-            <h5>Education</h5>
-            <p>B.Tech / B.Sc</p>
-            <p>MBA / MCA</p>
-            <p>Diploma</p>
-          </div>
-          <div>
-            <h5>Standards</h5>
-            <p>MNC Hiring</p>
-            <p>ATS Systems</p>
+      <BigFooter ref={r8} navigate={navigate} />
+
+      {/* Login Prompt Modal */}
+      {showLoginPrompt && (
+        <div style={{
+          position:"fixed",
+          inset:0,
+          background:"rgba(15,20,25,.7)",
+          backdropFilter:"blur(8px)",
+          display:"flex",
+          alignItems:"center",
+          justifyContent:"center",
+          zIndex:10000,
+          animation:"fadeIn .3s ease",
+        }}>
+          <div style={{
+            background:"var(--w)",
+            borderRadius:16,
+            padding:"40px",
+            maxWidth:440,
+            textAlign:"center",
+            border:"1.5px solid var(--border)",
+            boxShadow:"0 20px 60px rgba(15,20,25,.3)",
+            animation:"scaleIn .3s cubic-bezier(.4,0,.2,1)",
+          }}>
+            <div style={{
+              width:60,
+              height:60,
+              borderRadius:"50%",
+              background:"linear-gradient(135deg, rgba(79,70,229,.1), rgba(124,58,237,.1))",
+              display:"flex",
+              alignItems:"center",
+              justifyContent:"center",
+              margin:"0 auto 20px",
+              fontSize:28,
+            }}>🔐</div>
+            <h3 style={{
+              fontSize:24,
+              fontWeight:700,
+              color:"var(--ink)",
+              marginBottom:12,
+            }}>Login Required</h3>
+            <p style={{
+              fontSize:15,
+              color:"var(--ink3)",
+              lineHeight:1.6,
+              marginBottom:8,
+            }}>
+              To access personalized predictions and resume analysis,
+              please log in first.
+            </p>
+            <p style={{
+              fontSize:14,
+              color:"var(--accent)",
+              fontWeight:600,
+            }}>
+              Redirecting you to login page...
+            </p>
           </div>
         </div>
-
-        <div className="footer-bottom">
-          © {new Date().getFullYear()} PathNex. Career Intelligence Engine.
-        </div>
-      </footer>
-
-    </main>
+      )}
+    </div>
   );
-};
+}
 
-export default Home;
+/* ══════════════════════════════════════════════
+   DASHBOARD PREVIEW
+══════════════════════════════════════════════ */
+function DashboardPreview({ careerScore }) {
+  return (
+    <div style={{
+      background:"var(--w)",
+      border:"1.5px solid var(--border)",
+      borderRadius:16,
+      overflow:"hidden",
+      boxShadow:"0 20px 60px rgba(15,20,25,.08)",
+    }}>
+      {/* Header */}
+      <div style={{
+        padding:"16px 20px",
+        borderBottom:"1.5px solid var(--border)",
+        background:"var(--off)",
+        display:"flex",
+        alignItems:"center",
+        justifyContent:"space-between",
+      }}>
+        <div style={{display:"flex",gap:6}}>
+          {["#ff5f57","#ffbd2e","#28ca42"].map(c=>(
+            <div key={c} style={{width:12,height:12,borderRadius:"50%",background:c}}/>
+          ))}
+        </div>
+        <span style={{fontSize:11,color:"var(--ink3)",fontFamily:"var(--mono)",fontWeight:600}}>
+          Career Dashboard
+        </span>
+        <div style={{
+          padding:"3px 10px",
+          borderRadius:8,
+          background:"rgba(79,70,229,.1)",
+          border:"1px solid rgba(79,70,229,.2)",
+          fontSize:9,
+          color:"var(--accent)",
+          fontFamily:"var(--mono)",
+          fontWeight:700,
+          letterSpacing:".08em",
+        }}>LIVE</div>
+      </div>
+
+      {/* Content */}
+      <div style={{padding:"28px 24px"}}>
+        {/* Readiness */}
+        <div style={{marginBottom:24}}>
+          <div style={{
+            display:"flex",
+            justifyContent:"space-between",
+            alignItems:"center",
+            marginBottom:12,
+          }}>
+            <span style={{fontSize:13,fontWeight:600,color:"var(--ink3)"}}>
+              Career Readiness
+            </span>
+            <span style={{fontSize:18,fontWeight:700,color:"var(--accent)"}}>
+              {careerScore}%
+            </span>
+          </div>
+          <div style={{
+            height:8,
+            background:"var(--off)",
+            borderRadius:10,
+            overflow:"hidden",
+            border:"1px solid var(--border)",
+          }}>
+            <div style={{
+              height:"100%",
+              width:`${careerScore}%`,
+              background:"linear-gradient(90deg, var(--accent), var(--accent2))",
+              borderRadius:10,
+              transition:"width 1s cubic-bezier(.4,0,.2,1)",
+            }}/>
+          </div>
+        </div>
+
+        {/* Skill Gap */}
+        <div style={{
+          padding:"16px",
+          background:"var(--off)",
+          borderRadius:10,
+          border:"1px solid var(--border)",
+          marginBottom:20,
+        }}>
+          <div style={{fontSize:12,fontWeight:600,color:"var(--ink3)",marginBottom:10}}>
+            Skill Coverage
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
+            {[
+              {label:"DSA",pct:75},
+              {label:"React",pct:60},
+              {label:"SQL",pct:80},
+            ].map(({label,pct})=>(
+              <div key={label} style={{flex:1,textAlign:"center"}}>
+                <div style={{
+                  width:"100%",
+                  height:60,
+                  background:"var(--w)",
+                  borderRadius:6,
+                  position:"relative",
+                  overflow:"hidden",
+                  border:"1px solid var(--border)",
+                }}>
+                  <div style={{
+                    position:"absolute",
+                    bottom:0,
+                    width:"100%",
+                    height:`${pct}%`,
+                    background:"linear-gradient(180deg, var(--accent2), var(--accent))",
+                    transition:"height .8s cubic-bezier(.4,0,.2,1)",
+                  }}/>
+                </div>
+                <div style={{fontSize:10,fontWeight:600,color:"var(--ink3)",marginTop:6}}>
+                  {label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Resume Match */}
+        <div style={{
+          display:"flex",
+          alignItems:"center",
+          justifyContent:"space-between",
+          padding:"14px 16px",
+          background:"rgba(16,185,129,.08)",
+          border:"1px solid rgba(16,185,129,.2)",
+          borderRadius:10,
+        }}>
+          <div>
+            <div style={{fontSize:11,fontWeight:600,color:"var(--success)",marginBottom:2}}>
+              ATS Score
+            </div>
+            <div style={{fontSize:10,color:"var(--ink3)"}}>
+              Resume analyzed
+            </div>
+          </div>
+          <div style={{fontSize:24,fontWeight:700,color:"var(--success)"}}>
+            82%
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   TECH MARQUEE
+══════════════════════════════════════════════ */
+function TechMarquee() {
+  const doubled = [...TECH_STACK, ...TECH_STACK];
+  return (
+    <div style={{position:"relative"}}>
+      {/* Fade edges */}
+      {[{left:0},{right:0}].map((side,i)=>(
+        <div key={i} style={{
+          position:"absolute",top:0,bottom:0,width:100,zIndex:2,
+          background:`linear-gradient(${i===0?"90deg":"270deg"},var(--w) 0%,transparent 100%)`,
+          pointerEvents:"none",
+          ...side
+        }}/>
+      ))}
+
+      <div style={{
+        display:"flex",
+        width:"max-content",
+        animation:"marqueeX 40s linear infinite",
+      }}>
+        {doubled.map(({icon,label},i)=>(
+          <div key={i} style={{
+            display:"flex",
+            alignItems:"center",
+            gap:10,
+            padding:"0 32px",
+            borderRight:"1px solid var(--border)",
+          }}>
+            <i className={icon} style={{fontSize:22,opacity:.7}}/>
+            <span style={{
+              fontSize:12,
+              color:"var(--ink3)",
+              fontFamily:"var(--mono)",
+              fontWeight:600,
+              whiteSpace:"nowrap",
+            }}>{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   BIG FOOTER
+══════════════════════════════════════════════ */
+const BigFooter = React.forwardRef(function BigFooter({navigate}, ref) {
+  return (
+    <footer ref={ref} className="reveal" style={{
+      background:"var(--ink)",
+      color:"var(--w)",
+      position:"relative",
+      overflow:"hidden",
+      borderTop:"1.5px solid rgba(255,255,255,.08)",
+    }}>
+      {/* Grid pattern */}
+      <div style={{position:"absolute",inset:0,
+        backgroundImage:"linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px)",
+        backgroundSize:"50px 50px",pointerEvents:"none"}}/>
+
+      {/* Glow */}
+      <div style={{position:"absolute",bottom:"-30%",left:"50%",transform:"translateX(-50%)",
+        width:"70%",height:"60%",
+        background:"radial-gradient(circle,rgba(79,70,229,.12) 0%,transparent 70%)",
+        pointerEvents:"none"}}/>
+
+      <div style={{
+        position:"relative",
+        maxWidth:1400,
+        margin:"0 auto",
+        padding:"80px clamp(20px,5vw,80px) 0",
+      }}>
+        {/* Top */}
+        <div style={{
+          display:"flex",
+          justifyContent:"space-between",
+          alignItems:"flex-start",
+          flexWrap:"wrap",
+          gap:50,
+          paddingBottom:60,
+          borderBottom:"1px solid rgba(255,255,255,.08)",
+        }}>
+          {/* Brand */}
+          <div style={{maxWidth:380}}>
+            <div style={{
+              fontFamily:"var(--display)",
+              fontSize:32,
+              fontWeight:400,
+              fontStyle:"italic",
+              marginBottom:16,
+            }}>PathNex</div>
+            <p style={{
+              fontSize:14,
+              color:"rgba(255,255,255,.5)",
+              lineHeight:1.7,
+              marginBottom:24,
+            }}>
+              AI-powered career intelligence platform. Helping students and
+              professionals navigate their career journey with data-driven
+              insights and industry-aligned roadmaps.
+            </p>
+            <div style={{display:"flex",gap:12}}>
+              {["𝕏","⌗","in","◈"].map((icon)=>(
+                <div key={icon} data-mag style={{
+                  width:38,
+                  height:38,
+                  borderRadius:10,
+                  border:"1px solid rgba(255,255,255,.1)",
+                  background:"rgba(255,255,255,.03)",
+                  display:"flex",
+                  alignItems:"center",
+                  justifyContent:"center",
+                  cursor:"none",
+                  transition:"all .3s",
+                  fontSize:14,
+                }}
+                  onMouseEnter={e=>{
+                    e.currentTarget.style.background="rgba(255,255,255,.08)";
+                    e.currentTarget.style.borderColor="rgba(255,255,255,.2)";
+                  }}
+                  onMouseLeave={e=>{
+                    e.currentTarget.style.background="rgba(255,255,255,.03)";
+                    e.currentTarget.style.borderColor="rgba(255,255,255,.1)";
+                  }}>
+                  {icon}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Newsletter */}
+          <div style={{maxWidth:360}}>
+            <div style={{
+              fontSize:11,
+              fontFamily:"var(--mono)",
+              fontWeight:700,
+              letterSpacing:".14em",
+              color:"rgba(255,255,255,.3)",
+              marginBottom:14,
+              textTransform:"uppercase",
+            }}>Stay Updated</div>
+            <h3 style={{
+              fontFamily:"var(--display)",
+              fontSize:26,
+              fontWeight:400,
+              fontStyle:"italic",
+              marginBottom:12,
+            }}>Career Intelligence Insights</h3>
+            <p style={{
+              fontSize:13,
+              color:"rgba(255,255,255,.4)",
+              lineHeight:1.6,
+              marginBottom:18,
+            }}>
+              Get the latest career trends, skill insights, and platform updates
+            </p>
+            <div style={{display:"flex",gap:8}}>
+              <input placeholder="your@email.com"
+                style={{
+                  flex:1,
+                  padding:"12px 16px",
+                  borderRadius:8,
+                  border:"1px solid rgba(255,255,255,.12)",
+                  background:"rgba(255,255,255,.05)",
+                  color:"var(--w)",
+                  fontSize:13,
+                  fontFamily:"var(--mono)",
+                  outline:"none",
+                }}/>
+              <button data-mag style={{
+                padding:"12px 20px",
+                borderRadius:8,
+                border:"none",
+                background:"linear-gradient(135deg, var(--accent), var(--accent2))",
+                color:"var(--w)",
+                fontSize:13,
+                fontWeight:600,
+                cursor:"none",
+                transition:"all .3s",
+              }}
+                onMouseEnter={e=>{
+                  e.target.style.transform="translateY(-2px)";
+                  e.target.style.boxShadow="0 8px 20px rgba(79,70,229,.4)";
+                }}
+                onMouseLeave={e=>{
+                  e.target.style.transform="translateY(0)";
+                  e.target.style.boxShadow="none";
+                }}>
+                Subscribe
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div style={{
+          display:"flex",
+          gap:0,
+          borderBottom:"1px solid rgba(255,255,255,.08)",
+          flexWrap:"wrap",
+        }}>
+          {[
+            {lbl:"Career Paths",val:"1200+"},
+            {lbl:"Success Rate",val:"90%"},
+            {lbl:"Skills Tracked",val:"300+"},
+            {lbl:"Active Users",val:"5000+"},
+          ].map(({lbl,val},i)=>(
+            <div key={lbl} style={{
+              flex:"1 1 180px",
+              padding:"36px 24px",
+              borderRight: i<3 ? "1px solid rgba(255,255,255,.06)" : "none",
+              borderTop:"1px solid rgba(255,255,255,.06)",
+            }}>
+              <div style={{
+                fontFamily:"var(--display)",
+                fontSize:40,
+                fontWeight:400,
+                fontStyle:"italic",
+                marginBottom:6,
+              }}>{val}</div>
+              <div style={{
+                fontSize:12,
+                color:"rgba(255,255,255,.4)",
+                fontFamily:"var(--mono)",
+              }}>{lbl}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Links */}
+        <div style={{
+          display:"grid",
+          gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",
+          gap:40,
+          padding:"60px 0",
+          borderBottom:"1px solid rgba(255,255,255,.08)",
+        }}>
+          {Object.entries(FOOTER_COLS).map(([section,links])=>(
+            <div key={section}>
+              <div style={{
+                fontSize:11,
+                fontFamily:"var(--mono)",
+                fontWeight:700,
+                letterSpacing:".14em",
+                color:"rgba(255,255,255,.3)",
+                marginBottom:18,
+                textTransform:"uppercase",
+              }}>{section}</div>
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                {links.map(link=>(
+                  <span key={link} data-mag style={{
+                    fontSize:14,
+                    color:"rgba(255,255,255,.5)",
+                    cursor:"none",
+                    transition:"color .2s",
+                  }}
+                    onMouseEnter={e=>e.target.style.color="rgba(255,255,255,.9)"}
+                    onMouseLeave={e=>e.target.style.color="rgba(255,255,255,.5)"}>
+                    {link}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom */}
+        <div style={{
+          display:"flex",
+          justifyContent:"space-between",
+          alignItems:"center",
+          flexWrap:"wrap",
+          gap:20,
+          padding:"32px 0",
+        }}>
+          <div style={{display:"flex",gap:24,flexWrap:"wrap"}}>
+            <span style={{fontSize:13,color:"rgba(255,255,255,.3)",fontFamily:"var(--mono)"}}>
+              © {new Date().getFullYear()} PathNex
+            </span>
+            <span style={{fontSize:13,color:"rgba(255,255,255,.3)",fontFamily:"var(--mono)"}}>
+              Career Intelligence Engine
+            </span>
+          </div>
+          <div style={{display:"flex",gap:24,flexWrap:"wrap"}}>
+            {["Privacy","Terms","Security","Status"].map(l=>(
+              <span key={l} data-mag style={{
+                fontSize:12,
+                color:"rgba(255,255,255,.3)",
+                cursor:"none",
+                fontFamily:"var(--mono)",
+                transition:"color .2s",
+              }}
+                onMouseEnter={e=>e.target.style.color="rgba(255,255,255,.6)"}
+                onMouseLeave={e=>e.target.style.color="rgba(255,255,255,.3)"}>
+                {l}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+});
