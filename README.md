@@ -182,55 +182,13 @@ const handleSubmit = async () => {
 
 ## 🏛 7.1 System Architecture Diagram
 
-```plantuml
-@startuml
-actor User
+<img width="258" height="713" alt="image" src="https://github.com/user-attachments/assets/553584fa-4adf-495f-b5bf-9383998af05a" />
 
-rectangle "Frontend (React)" {
-  User --> (Input Form)
-  (Input Form) --> (API Request Handler)
-}
-
-rectangle "Backend (Flask API)" {
-  (Prediction Endpoint)
-  (Feature Processor)
-  (ML Model Loader)
-}
-
-rectangle "ML Model" {
-  (Career Prediction Model)
-}
-
-(API Request Handler) --> (Prediction Endpoint)
-(Prediction Endpoint) --> (Feature Processor)
-(Feature Processor) --> (ML Model Loader)
-(ML Model Loader) --> (Career Prediction Model)
-(Career Prediction Model) --> (Prediction Endpoint)
-(Prediction Endpoint) --> (API Request Handler)
-@enduml
-```
-
----
 
 ## 🔄 7.2 Sequence Diagram
 
-```plantuml
-@startuml
-actor User
-participant "Frontend"
-participant "Backend API"
-participant "ML Model"
+<img width="479" height="355" alt="image" src="https://github.com/user-attachments/assets/2e9a749b-d3f2-4af9-8e94-3952b5216346" />
 
-User -> "Frontend": Submit Details
-"Frontend" -> "Backend API": POST /predict
-"Backend API" -> "ML Model": Predict Career
-"ML Model" --> "Backend API": Prediction Result
-"Backend API" --> "Frontend": JSON Response
-"Frontend" --> User: Display Career Path
-@enduml
-```
-
----
 
 ## 🚀 7.3 Deployment Diagram
 
