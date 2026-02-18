@@ -192,43 +192,13 @@ const handleSubmit = async () => {
 
 ## 🚀 7.3 Deployment Diagram
 
-```plantuml
-@startuml
-node "User Browser" {
-  component "React App"
-}
+<img width="232" height="356" alt="image" src="https://github.com/user-attachments/assets/1d466c3a-776a-41c2-9dcc-d197af350ea8" />
 
-node "Backend Server" {
-  component "Flask API"
-  component "ML Model (.pkl)"
-}
-
-"React App" --> "Flask API"
-"Flask API" --> "ML Model (.pkl)"
-@enduml
-```
-
----
 
 # 📸 8. User Interface Screenshots
 
-(After creating a `screenshots/` folder)
+All project images are available in screenshots folder .
 
-Example:
-
-```markdown
-## 📝 Input Form
-
-![Input Form](./screenshots/input-form.png)
-
-Users enter academic performance, skills, and interests.
-
-## 📊 Recommendation Result
-
-![Result Page](./screenshots/result-page.png)
-
-Displays top recommended career path with confidence score.
-```
 
 ---
 
